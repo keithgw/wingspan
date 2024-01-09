@@ -1,8 +1,14 @@
 import random
 
 class Deck:
-    def __init__(self, cards=[]):
-        self.cards = cards
+    def __init__(self, cards=None):
+        if cards is None:
+            self.cards = []
+        else:
+            self.cards = cards
+
+    def get_count(self):
+        return len(self.cards)
 
     def add_card(self, card):
         self.cards.append(card)
