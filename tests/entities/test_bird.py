@@ -7,3 +7,7 @@ class TestBird(unittest.TestCase):
         self.assertEqual(bird.common_name, 'Osprey')
         self.assertEqual(bird.points, 5)
         self.assertEqual(bird.food_cost, 2)
+
+    def test_get_name(self):
+        bird = Bird('Osprey', 5, 2)
+        self.assertEqual(bird.get_name(), 'Osprey') 

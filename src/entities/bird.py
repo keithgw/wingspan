@@ -4,6 +4,9 @@ class Bird:
         self.points = points
         self.food_cost = food_cost
 
+    def get_name(self):
+        return self.common_name
+    
     def activate(self):
         # Add code for activation behavior here
         pass
