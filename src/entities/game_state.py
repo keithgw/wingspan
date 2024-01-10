@@ -1,3 +1,5 @@
+from src.entities.hand import BirdHand
+
 class GameState:
     def __init__(self, num_turns, num_players):
         """
@@ -13,6 +15,7 @@ class GameState:
         self.game_turn = 0 # increments by 1 each player turn, so will end at num_players * num_turns
         self.player_turns = [0] * num_players # keeps track of how many turns each player has taken
         self.player_names = [f'Player {i + 1}' for i in range(num_players)]
+        self.bird_hands = [BirdHand() for _ in range(num_players)]
 
     def get_num_turns(self):
         '''Returns the total number of turns in the game.'''
@@ -42,3 +45,7 @@ class GameState:
     def get_turns_remaining(self):
         '''Returns the number of turns remaining in the game as a list indexed by player.'''
         return [self.num_turns - turn for turn in self.player_turns]
+    
+    def get_player_bird_hand(self, player):
+        '''Returns the bird hand of the given player'''
+        return self.bird_hands[player]
