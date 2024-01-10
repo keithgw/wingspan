@@ -17,9 +17,9 @@ class WingspanGame:
         self.game_board = GameBoard()
         self.discard_pile = Deck()
 
-    def setup(self, num_players, num_turns, num_starting_cards=2):
+    def setup(self, num_turns, num_players, num_starting_cards=2):
         # Initizialize the game state, this handles turns and assigns empty player hands
-        self.game_state = GameState(num_players, num_turns)
+        self.game_state = GameState(num_turns=num_turns, num_players=num_players)
 
         # Initialize the bird feeder
         self.bird_feeder = BirdFeeder()
@@ -36,17 +36,18 @@ class WingspanGame:
         for player in range(num_players):
             hand = self.game_state.get_player_bird_hand(player)
             for _ in range(num_starting_cards):
-                hand.add_card(self.bird_deck.draw_card())
+                bird = self.bird_deck.draw_card()
+                hand.add_card(bird, bird.get_name())
 
         # Initialize the player food supplies
         self.food_supplies = [FoodSupply() for _ in range(num_players)]
         for player in range(num_players):
-            starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(self.game_state.get_player_bird_hand(player))
+            starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(self.game_state.get_player_bird_hand(player).get_cards_in_hand())
             self.food_supplies[player].increment(starting_food)
 
         # Initialize the bird tray
-        self.bird_tray = Tray()
-        self.bird_tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
+        self.tray = Tray()
+        self.tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
         
     def play(self):
         # Main game loop
