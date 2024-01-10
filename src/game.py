@@ -1,5 +1,5 @@
 from src.entities.game_state import GameState
-from src.entities.gameboard import Gameboard
+from src.entities.gameboard import GameBoard
 from src.entities.birdfeeder import BirdFeeder
 from src.entities.deck import Deck
 from data.bird_list import birds as bird_list
@@ -7,14 +7,19 @@ from src.entities.hand import BirdHand
 from src.entities.tray import Tray
 from src.entities.food_supply import FoodSupply
 
-class WingspanGame:
-    def __init__(self, num_players=1, num_turns=10):
-        '''Initializes the game.'''
-        # Initizialize the game state
-        self.game_state = GameState(num_players, num_turns)
+# Constants
+TOTAL_ALLOWED_IN_STARTING_HAND = 5
+NUM_PLAYERS = 1 #TODO: get thse from STDIN
+NUM_TURNS = 10
 
-        # Initialize the game board
-        self.game_board = Gameboard()
+class WingspanGame:
+    def __init__(self):
+        self.game_board = GameBoard()
+        self.discard_pile = Deck()
+
+    def setup(self, num_players, num_turns, num_starting_cards=2):
+        # Initizialize the game state, this handles turns and assigns empty player hands
+        self.game_state = GameState(num_players, num_turns)
 
         # Initialize the bird feeder
         self.bird_feeder = BirdFeeder()
@@ -24,21 +29,25 @@ class WingspanGame:
         self.bird_deck = Deck()
         for bird in bird_list:
             self.bird_deck.add_card(bird)
-
-        # Initialize the discard pile
-        self.discard_pile = Deck()
+        self.bird_deck.shuffle_deck()
 
         # Initialize the player hands
-
-
-        # Initialize the bird tray
+        #TODO: move hands outside of game state, similar to food supplies
+        for player in range(num_players):
+            hand = self.game_state.get_player_bird_hand(player)
+            for _ in range(num_starting_cards):
+                hand.add_card(self.bird_deck.draw_card())
 
         # Initialize the player food supplies
+        self.food_supplies = [FoodSupply() for _ in range(num_players)]
+        for player in range(num_players):
+            starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(self.game_state.get_player_bird_hand(player))
+            self.food_supplies[player].increment(starting_food)
 
-    def setup(self):
-        # Set up the game board and any initial game state
-        pass
-
+        # Initialize the bird tray
+        self.bird_tray = Tray()
+        self.bird_tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
+        
     def play(self):
         # Main game loop
         while not self.is_game_over():
@@ -64,5 +73,5 @@ class WingspanGame:
 
 if __name__ == "__main__":
     game = WingspanGame()
-    game.setup()
+    game.setup(NUM_PLAYERS, NUM_TURNS)
     game.play()
