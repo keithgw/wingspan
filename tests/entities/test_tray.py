@@ -12,6 +12,15 @@ class TestTray(unittest.TestCase):
             Bird("Barn Swallow", 3, 1)
         ]
 
+    def test_get_count(self):
+        # Test when the tray is empty
+        self.assertEqual(self.tray.get_count(), 0)
+
+        # Test when the tray has birds
+        for bird in self.birds:
+            self.tray.add_bird(bird)
+        self.assertEqual(self.tray.get_count(), 3)
+
     def test_see_birds_in_tray(self):
         # Test when the tray is empty
         self.assertEqual(self.tray.see_birds_in_tray(), [])

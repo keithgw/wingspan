@@ -4,6 +4,10 @@ class Tray:
     def __init__(self):
         self.birds = {}
 
+    def get_count(self):
+        '''Public method that returns the number of birds in the tray.'''
+        return len(self.birds)
+
     def see_birds_in_tray(self):
         '''Public method that returns a list of birds in the tray.'''
         return [bird for bird in self.birds.keys()]
