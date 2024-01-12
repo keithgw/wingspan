@@ -10,7 +10,11 @@ class Hand:
 
     def get_cards_in_hand(self):
         '''Public method that returns cards in hand'''
-        return [card_name for card_name in self.cards.keys()]
+        return list(self.cards.values())
+    
+    def get_card_names_in_hand(self):
+        '''Public method that returns card names in hand'''
+        return list(self.cards.keys())
 
     def remove_card(self, card_name):
         '''Remove a card from the hand and return it'''
@@ -30,7 +34,7 @@ class Hand:
 
     def discard_card(self, card_name):
         '''Discard a card from the hand'''
-        self.remove_card(card_name)
+        return self.remove_card(card_name)
 
 class BirdHand(Hand):
     '''A hand specifically for bird cards'''
