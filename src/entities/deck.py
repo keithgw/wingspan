@@ -14,7 +14,7 @@ class Deck:
         self.cards.append(card)
 
     def draw_card(self):
-        if len(self.cards) == 0:
+        if self.get_count() == 0:
             raise ValueError('Deck is empty')
         # cards will be drawn from the top of the deck
         return self.cards.pop(0) 
