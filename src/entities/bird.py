@@ -7,6 +7,12 @@ class Bird:
     def get_name(self):
         return self.common_name
     
+    def get_points(self):
+        return self.points
+    
+    def get_food_cost(self):
+        return self.food_cost
+    
     def activate(self):
         # Add code for activation behavior here
         pass

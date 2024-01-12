@@ -4,24 +4,39 @@ from data.bird_list import birds as bird_list
 
 class TestWingspanGame(unittest.TestCase):
     def setUp(self):
+        self.num_players = 2
+        self.num_turns = 5
+        self.num_starting_cards = 3
         self.game = WingspanGame()
+        self.game.setup(self.num_turns, self.num_players, self.num_starting_cards)
+
+    num_players = 2
+    num_turns = 5
+    num_starting_cards = 3
 
     def test_setup(self):
-        num_players = 2
-        num_turns = 5
-        num_starting_cards = 3
-        self.game.setup(num_turns, num_players, num_starting_cards)
         # Assertions to test the setup of the game object
-        self.assertEqual(self.game.game_state.num_players, num_players)
-        self.assertEqual(self.game.game_state.num_turns, num_turns)
+        self.assertEqual(self.game.game_state.num_players, self.num_players)
+        self.assertEqual(self.game.game_state.num_turns, self.num_turns)
+        self.assertEqual(self.game.actions, ["play_a_bird", "gain_food", "draw_bird_cards"])
         self.assertEqual(self.game.bird_feeder.food_count, 5)
         self.assertEqual(len(self.game.tray.see_birds_in_tray()), 3)
-        self.assertEqual(len(self.game.bird_hands[0].get_cards_in_hand()), 3)
-        self.assertEqual(len(self.game.bird_hands[1].get_cards_in_hand()), 3)
-        self.assertEqual([supply.amount for supply in self.game.food_supplies], [2] * num_players)
+        self.assertEqual(len(self.game.players), self.num_players)
+        self.assertEqual(len(self.game.players[0].bird_hand.get_cards_in_hand()), 3)
+        self.assertEqual(len(self.game.players[1].bird_hand.get_cards_in_hand()), 3)
+        food_supplies = [player.food_supply.amount for player in self.game.players]
+        self.assertEqual(food_supplies, [2] * self.num_players)
         
-        cards_left_in_deck = len(bird_list) - num_players * num_starting_cards - 3
+        cards_left_in_deck = len(bird_list) - self.num_players * self.num_starting_cards - 3
         self.assertEqual(self.game.bird_deck.get_count(), cards_left_in_deck)
+
+    def test_determine_player_turn(self):
+        # Test when it is the first player's turn
+        self.assertEqual(self.game.determine_player_turn(), 0)
+
+        # Test when it is the second player's turn
+        self.game.game_state.end_player_turn()
+        self.assertEqual(self.game.determine_player_turn(), 1)
         
 if __name__ == "__main__":
     unittest.main()
