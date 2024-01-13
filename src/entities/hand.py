@@ -8,6 +8,10 @@ class Hand:
         '''Add a card to the hand'''
         self.cards[card_name] = card
 
+    def get_card(self, card_name):
+        '''Get a card from the hand'''
+        return self.cards[card_name]
+
     def get_cards_in_hand(self):
         '''Public method that returns cards in hand'''
         return list(self.cards.values())
@@ -39,15 +43,14 @@ class Hand:
 class BirdHand(Hand):
     '''A hand specifically for bird cards'''
 
-    def draw_bird_from_tray(self, tray, common_name):
+    def draw_bird_from_tray(self, tray, bird_name):
         '''Draw a bird from the tray and add it to the hand'''
-        bird = tray.draw_bird(common_name)
-        bird_name = bird.get_name()
-        self.add_card(bird, card_name=bird_name)  # Pass the card_name parameter when calling add_card)
+        bird = tray.draw_bird(bird_name)
+        self.add_card(bird, card_name=bird_name)
 
-    def play_bird(self, card_name):
+    def play_bird(self, bird_name, game_board):
         '''Play a bird from the hand'''
-        self.remove_card(card_name)
+        game_board.add_card(self.remove_card(bird_name))
 
     def tuck_card(self, card_name):
         '''Tuck a card from the hand'''

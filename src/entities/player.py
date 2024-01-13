@@ -1,21 +1,31 @@
+from src.entities.gameboard import GameBoard
+
 class Player:
     def __init__(self, bird_hand, food_supply, actions):
         self.bird_hand = bird_hand
         self.food_supply = food_supply
         self.actions = actions # actions are indexed as follows: 0 = play bird, 1 = gain food, 2 = draw bird
+        self.game_board = GameBoard()
 
-    def request_action(self, tray, bird_deck):
+    def get_bird_hand(self):
         '''
-        Chooses an action to take based on the current game state and returns it.
-
-        Args:
-            tray (Tray): The bird tray.
-            bird_deck (Deck): The bird deck.
+        Returns the bird hand associated with the player.
         '''
-        action = self.choose_action(tray=tray, bird_deck=bird_deck)
-        return action
-
-    def enumerate_legal_actions(self, tray, bird_deck):
+        return self.bird_hand
+    
+    def get_food_supply(self):
+        '''
+        Returns the food supply associated with the player.
+        '''
+        return self.food_supply
+    
+    def get_game_board(self):
+        '''
+        Returns the game board associated with the player.
+        '''
+        return self.game_board
+    
+    def _enumerate_legal_actions(self, tray, bird_deck):
         '''
         Enumerates the legal actions based on the current game state.
         
@@ -28,6 +38,7 @@ class Player:
 
         # Check if player can play a bird
         birds_in_hand = self.bird_hand.get_cards_in_hand()
+        #TODO: check that the game board is not full
         if len(birds_in_hand) > 0:
             # Check if player has enough food to play a bird
             if any([self.food_supply.can_play_bird(bird) for bird in birds_in_hand]):
@@ -41,14 +52,14 @@ class Player:
             legal_actions.append(self.actions[2])
 
         return legal_actions
-
-    def choose_action(self, tray, bird_deck):
+    
+    def _choose_action(self, tray, bird_deck):
         actions_map = {
             1: self.actions[0],
             2: self.actions[1],
             3: self.actions[2]
         }
-        legal_actions = self.enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
+        legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
         
         # Display legal_actions to the console
         prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
@@ -67,6 +78,17 @@ class Player:
 
         return actions_map[chosen_action]
 
+    def request_action(self, tray, bird_deck):
+        '''
+        Chooses an action to take based on the current game state and returns it.
+
+        Args:
+            tray (Tray): The bird tray.
+            bird_deck (Deck): The bird deck.
+        '''
+        action = self._choose_action(tray=tray, bird_deck=bird_deck)
+        return action
+
     def choose_a_bird(self):
         '''
         Prompts the player to choose a bird from their hand.
@@ -78,8 +100,18 @@ class Player:
             print(f"{chosen_bird} is not a valid bird. {prompt}")
             chosen_bird = input(prompt)
 
-        # Remove the bird from the player's hand
-        return self.bird_hand.remove_card(chosen_bird)
+        return chosen_bird
+    
+    def play_a_bird(self, bird_name):
+        '''
+        Player plays a bird to the game board.
+
+        Args:
+            bird_name (str): The name of the bird to play.
+        '''
+        food_cost = self.bird_hand.get_card(bird_name).get_food_cost()
+        self.food_supply.decrement(food_cost)
+        self.bird_hand.play_bird(bird_name, self.game_board)
     
     def gain_food(self, bird_feeder):
         '''
