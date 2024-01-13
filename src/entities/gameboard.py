@@ -10,5 +10,13 @@ class GameBoard:
             raise ValueError("Game board is full. Cannot add more cards.")
         self.cards.append(card)
 
-    def get_cards(self):
+    def get_birds(self):
         return self.cards
+    
+    def render(self):
+        print("{:<30s}{:<15s}{:<10s}".format("Bird Name", "Point Value", "Food Cost"))
+        for bird in self.get_birds():
+            print("{:<30s}{:<15d}{:<10d}".format(bird.get_name(), bird.get_points(), bird.get_food_cost()))
+        for _ in range(len(self.cards), 5):
+            print("{:<30s}{:<15s}{:<10s}".format("empty", "--", "--"))
+        

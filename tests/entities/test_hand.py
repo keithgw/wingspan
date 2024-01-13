@@ -85,7 +85,7 @@ class TestBirdHand(unittest.TestCase):
         self.hand.add_card(Bird(bird_name, 5, 2), bird_name)
         self.hand.play_bird(bird_name=bird_name, game_board=game_board)
         self.assertNotIn(bird_name, self.hand.cards)
-        self.assertIn(bird_name, [bird.get_name() for bird in game_board.get_cards()])
+        self.assertIn(bird_name, [bird.get_name() for bird in game_board.get_birds()])
 
     def test_tuck_card(self):
         card_name = "Osprey"
