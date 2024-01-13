@@ -3,6 +3,7 @@ from src.entities.hand import Hand, BirdHand
 from src.entities.bird import Bird
 from src.entities.deck import Deck
 from src.entities.tray import Tray
+from src.entities.gameboard import GameBoard
 from unittest.mock import patch
 from io import StringIO
 
@@ -16,6 +17,11 @@ class TestHand(unittest.TestCase):
         card_name = self.test_card.get_name()
         self.hand.add_card(self.test_card, card_name)
         self.assertIn(card_name, self.hand.cards)
+
+    def test_get_card(self):
+        card_name = self.test_card.get_name()
+        self.hand.add_card(self.test_card, card_name)
+        self.assertEqual(self.hand.get_card(card_name), self.test_card)
 
     def test_get_cards_in_hand(self):
         self.hand.add_card(self.test_card, self.test_card.get_name())
@@ -74,10 +80,12 @@ class TestBirdHand(unittest.TestCase):
         self.assertIn(card_to_draw, self.hand.get_card_names_in_hand())
 
     def test_play_bird(self):
-        card_name = "Osprey"
-        self.hand.add_card(Bird(card_name, 5, 2), card_name)
-        self.hand.play_bird(card_name)
-        self.assertNotIn(card_name, self.hand.cards)
+        game_board = GameBoard()
+        bird_name = "Osprey"
+        self.hand.add_card(Bird(bird_name, 5, 2), bird_name)
+        self.hand.play_bird(bird_name=bird_name, game_board=game_board)
+        self.assertNotIn(bird_name, self.hand.cards)
+        self.assertIn(bird_name, [bird.get_name() for bird in game_board.get_cards()])
 
     def test_tuck_card(self):
         card_name = "Osprey"

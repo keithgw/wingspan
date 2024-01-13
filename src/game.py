@@ -15,7 +15,6 @@ NUM_TURNS = 10
 
 class WingspanGame:
     def __init__(self):
-        self.game_board = GameBoard()
         self.discard_pile = Deck()
         self.actions = ["play_a_bird", "gain_food", "draw_bird_cards"] # lay_eggs not implemented yet
 
