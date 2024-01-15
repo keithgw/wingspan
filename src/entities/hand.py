@@ -44,7 +44,7 @@ class Hand:
     
     def render(self):
         '''Render the hand'''
-        print(render_bird_container(bird_container=self.get_card_names_in_hand()))
+        print(render_bird_container(bird_container=self.get_cards_in_hand()))
 
 class BirdHand(Hand):
     '''A hand specifically for bird cards'''
