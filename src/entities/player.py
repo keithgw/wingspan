@@ -1,12 +1,27 @@
 from src.entities.gameboard import GameBoard
 
 class Player:
-    def __init__(self, bird_hand, food_supply, actions):
+    def __init__(self, name, bird_hand, food_supply, num_turns):
+        self.name = name
         self.bird_hand = bird_hand
         self.food_supply = food_supply
-        self.actions = actions # actions are indexed as follows: 0 = play bird, 1 = gain food, 2 = draw bird
+        self.num_turns = num_turns
+        self.turns_remaining = num_turns
         self.game_board = GameBoard()
+        self.actions = ["play_a_bird", "gain_food", "draw_a_bird"] # lay_eggs not implemented yet
 
+    def get_name(self):
+        '''
+        Returns the name of the player.
+        '''
+        return self.name
+    
+    def set_name(self, name):
+        '''
+        Sets the name of the player.
+        '''
+        self.name = name
+        
     def get_bird_hand(self):
         '''
         Returns the bird hand associated with the player.
@@ -170,5 +185,15 @@ class Player:
         else:
             self.bird_hand.draw_bird_from_tray(tray, chosen_bird)
             
+    def end_turn(self):
+        '''
+        Ends the player's turn.
+        '''
+        self.turns_remaining -= 1
 
+    def get_turns_remaining(self):
+        '''
+        Returns the number of turns remaining for the player.
+        '''
+        return self.turns_remaining
 

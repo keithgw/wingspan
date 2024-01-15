@@ -22,3 +22,6 @@ class FoodSupply:
             bird (Bird): The bird to check if the player has enough food to play.
         '''
         return self.amount >= bird.get_food_cost()
+    
+    def render(self):
+        print("Food supply: " + str(self.amount))

@@ -10,16 +10,15 @@ from src.entities.player import Player
 
 # Constants
 TOTAL_ALLOWED_IN_STARTING_HAND = 5
-NUM_PLAYERS = 1 #TODO: get thse from STDIN
+NUM_PLAYERS = 1 #TODO: get these from STDIN
 NUM_TURNS = 10
 
 class WingspanGame:
     def __init__(self):
         self.discard_pile = Deck()
-        self.actions = ["play_a_bird", "gain_food", "draw_bird_cards"] # lay_eggs not implemented yet
 
     def setup(self, num_turns, num_players, num_starting_cards=2):
-        # Initizialize the game state, this handles turns and assigns empty player hands
+        # Initizialize the game state, this tracks the current turn and player
         self.game_state = GameState(num_turns=num_turns, num_players=num_players)
 
         # Initialize the bird feeder
@@ -45,40 +44,41 @@ class WingspanGame:
             starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(hand.get_cards_in_hand())
             food_supply.increment(starting_food)
             # create player
-            self.players[player] = Player(hand, food_supply, self.actions)
+            player_name = "Player " + str(player + 1)
+            self.players[player] = Player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
 
         # Initialize the bird tray
         self.tray = Tray()
         self.tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
-    
-    def determine_player_turn(self):
-        # Determine the current player's turn
-        return self.game_state.get_current_player()
-        
+            
     def play(self):
         # Main game loop
-        while not self.is_game_over():
-            current_player = self.determine_player_turn()
+        while not self.game_state.is_game_over():
+            current_player_idx = self.game_state.determine_player_turn()
+            self.render(current_player_idx)
+            current_player = self.players[current_player_idx]
             self.take_turn(current_player)
-            self.update_game_state()
-            self.render()
-
+    
     def take_turn(self, player):
         # Logic for a single player's turn
-        # self.players[player].request_action(bird_hand=self.bird_hands[player], food_supply=self.food_supplies[player], game_state=self.game_state, bird_feeder=self.bird_feeder, tray=self.tray, bird_deck=self.bird_deck, actions=self.actions)
+        
+        # Choose an action
+
+        # Update the game state
+
+        # End the turn
         pass
 
-    def update_game_state(self):
-        # Update the game state after each turn
-        pass
-
-    def render(self):
+    def render(self, current_player_idx):
+        current_player = self.players[current_player_idx]
         # Render the current game state
-        pass
-
-    def is_game_over(self):
-        # Check if the game is over
-        pass
+        self.bird_feeder.render()
+        self.tray.render()
+        print("It is " + current_player.get_name() + "'s turn.")
+        print(current_player.get_turns_remaining() + " turns remaining.")
+        current_player.game_board.render()
+        current_player.food_supply.render()
+        current_player.bird_hand.render()
 
 if __name__ == "__main__":
     game = WingspanGame()
