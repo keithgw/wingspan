@@ -68,5 +68,6 @@ class TestTray(unittest.TestCase):
             self.tray.render()
             self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
             mock_render.assert_called_once_with(bird_container=self.tray.see_birds_in_tray(), capacity=self.tray.capacity)
+            
 if __name__ == '__main__':
     unittest.main()
