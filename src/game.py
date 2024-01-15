@@ -10,16 +10,15 @@ from src.entities.player import Player
 
 # Constants
 TOTAL_ALLOWED_IN_STARTING_HAND = 5
-NUM_PLAYERS = 1 #TODO: get thse from STDIN
+NUM_PLAYERS = 1 #TODO: get these from STDIN
 NUM_TURNS = 10
 
 class WingspanGame:
     def __init__(self):
         self.discard_pile = Deck()
-        self.actions = ["play_a_bird", "gain_food", "draw_bird_cards"] # lay_eggs not implemented yet
 
     def setup(self, num_turns, num_players, num_starting_cards=2):
-        # Initizialize the game state, this handles turns and assigns empty player hands
+        # Initizialize the game state, this tracks the current turn and player
         self.game_state = GameState(num_turns=num_turns, num_players=num_players)
 
         # Initialize the bird feeder
@@ -45,7 +44,8 @@ class WingspanGame:
             starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(hand.get_cards_in_hand())
             food_supply.increment(starting_food)
             # create player
-            self.players[player] = Player(hand, food_supply, self.actions)
+            player_name = "Player " + str(player + 1)
+            self.players[player] = Player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
 
         # Initialize the bird tray
         self.tray = Tray()
@@ -57,7 +57,7 @@ class WingspanGame:
         
     def play(self):
         # Main game loop
-        while not self.is_game_over():
+        while not self.game_state.is_game_over():
             current_player = self.determine_player_turn()
             self.take_turn(current_player)
             self.update_game_state()
@@ -74,10 +74,6 @@ class WingspanGame:
 
     def render(self):
         # Render the current game state
-        pass
-
-    def is_game_over(self):
-        # Check if the game is over
         pass
 
 if __name__ == "__main__":
