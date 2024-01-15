@@ -70,26 +70,20 @@ class Player:
     
     def _choose_action(self, tray, bird_deck):
         actions_map = {
-            1: self.actions[0],
-            2: self.actions[1],
-            3: self.actions[2]
+            '1': self.actions[0],
+            '2': self.actions[1],
+            '3': self.actions[2]
         }
         legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
         
-        # Display legal_actions to the console
-        prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
-        print(prompt)
-
         # Prompt the player to choose an action
-        chosen_action = input("Choose an action: ")
+        prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
+        chosen_action = input(prompt).strip()
 
         # Check if the chosen action is legal
-        while chosen_action not in [1, 2, 3]:
-            print(f"{chosen_action} is not vaild. {prompt}")
-            print("Choose an action: ")
         while actions_map[chosen_action] not in legal_actions:
             print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
-            chosen_action = input("Choose an action: ")
+            chosen_action = input(prompt).strip()
 
         return actions_map[chosen_action]
 
@@ -127,7 +121,7 @@ class Player:
         Prompts the player to choose a bird from their hand.
         '''
         legal_birds_in_hand = [bird.get_name() for bird in self.bird_hand.get_cards_in_hand() if self.food_supply.can_play_bird(bird)]
-        prompt = "Choose a bird to play: ".join([f"\n{bird}" for bird in legal_birds_in_hand])
+        prompt = "Choose a bird to play: " + "\n" + "\n".join(legal_birds_in_hand) + "\n"
         chosen_bird = input(prompt)
         while chosen_bird not in self.bird_hand.get_card_names_in_hand():
             print(f"{chosen_bird} is not a valid bird. {prompt}")
@@ -168,7 +162,7 @@ class Player:
         tray_is_empty = tray.get_count() == 0
         
         # If the tray is empty, draw from the bird deck
-        prompt_from_tray = "Choose a bird: ".join([f"\n{bird}" for bird in tray.see_birds_in_tray()])
+        prompt_from_tray = "Choose a bird from the tray: " + "\n" +  "\n".join(tray.see_birds_in_tray())
         prompt_from_deck = "type 'deck' to draw from the bird deck."
         if tray_is_empty:
             if deck_is_empty:

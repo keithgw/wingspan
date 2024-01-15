@@ -9,6 +9,10 @@ class Tray:
     def get_count(self):
         '''Public method that returns the number of birds in the tray.'''
         return len(self.birds)
+    
+    def get_birds_in_tray(self):
+        '''Public method that returns a list of birds in the tray.'''
+        return [bird for bird in self.birds.values()]
 
     def see_birds_in_tray(self):
         '''Public method that returns a list of birds in the tray.'''
@@ -55,4 +59,4 @@ class Tray:
 
     def render(self):
         '''Render the tray.'''
-        print(render_bird_container(bird_container=self.see_birds_in_tray(), capacity=self.capacity))
+        print(render_bird_container(bird_container=self.get_birds_in_tray(), capacity=self.capacity))
