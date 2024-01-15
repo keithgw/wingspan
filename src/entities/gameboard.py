@@ -1,10 +1,12 @@
+from src.utilities.utils import render_bird_container
+
 class GameBoard:
-    def __init__(self, limit=5):
-        self.limit = limit
+    def __init__(self, capacity=5):
+        self.capacity = capacity
         self.cards = []
 
     def check_if_full(self):
-        return len(self.cards) == self.limit
+        return len(self.cards) == self.capacity
 
     def add_card(self, card):
         if self.check_if_full():
@@ -15,9 +17,4 @@ class GameBoard:
         return self.cards
     
     def render(self):
-        print("{:<30s}{:<15s}{:<10s}".format("Bird Name", "Point Value", "Food Cost"))
-        for bird in self.get_birds():
-            print("{:<30s}{:<15d}{:<10d}".format(bird.get_name(), bird.get_points(), bird.get_food_cost()))
-        for _ in range(len(self.cards), self.limit):
-            print("{:<30s}{:<15s}{:<10s}".format("empty", "--", "--"))
-        
+        print(render_bird_container(bird_container=self.get_birds(), capacity=self.capacity))
