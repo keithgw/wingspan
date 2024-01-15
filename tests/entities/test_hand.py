@@ -65,6 +65,14 @@ class TestHand(unittest.TestCase):
         remove_card_mock.assert_called_once()
         self.assertEqual(discarded_card, 'Osprey')
 
+    def test_render(self):
+        # check that render calls render_bird_container, and prints the returned value
+        with patch('src.entities.hand.render_bird_container', return_value="Mocked render output") as mock_render, \
+            patch('sys.stdout', new=StringIO()) as mock_stdout:
+            self.hand.render()
+            self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
+            mock_render.assert_called_once_with(bird_container=self.hand.get_card_names_in_hand())
+
 class TestBirdHand(unittest.TestCase):
 
     def setUp(self):
