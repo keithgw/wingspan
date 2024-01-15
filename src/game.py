@@ -63,11 +63,13 @@ class WingspanGame:
         # Logic for a single player's turn
         
         # Choose an action
+        chosen_action = player.request_action(tray=self.tray, bird_deck=self.bird_deck)
 
-        # Update the game state
+        # Player takes the action, which will update the feeder, tray, deck, player's game board, player's hand, and player's food supply
+        player.take_action(chosen_action, tray=self.tray, bird_deck=self.bird_deck, bird_feeder=self.bird_feeder)
 
-        # End the turn
-        pass
+        # End the turn, this updates the game state and player's turn count
+        self.game_state.end_player_turn(player)
 
     def render(self, current_player_idx):
         current_player = self.players[current_player_idx]
