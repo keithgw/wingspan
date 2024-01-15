@@ -1,5 +1,7 @@
 import unittest
 from src.entities.birdfeeder import BirdFeeder
+from unittest.mock import patch
+from io import StringIO
 
 class TestBirdFeeder(unittest.TestCase):
     def setUp(self):
@@ -32,6 +34,12 @@ class TestBirdFeeder(unittest.TestCase):
         self.bird_feeder.food_count = 3
         with self.assertRaises(BirdFeeder.NotEmptyError):
             self.bird_feeder.reroll()
+
+    def test_render(self):
+        self.bird_feeder.food_count = 3
+        with patch('sys.stdout', new=StringIO()) as fake_out:
+            self.bird_feeder.render()
+            self.assertEqual(fake_out.getvalue().strip(), "Bird Feeder: 3")
 
 if __name__ == '__main__':
     unittest.main()
