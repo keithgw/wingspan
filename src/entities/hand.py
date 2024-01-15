@@ -1,3 +1,5 @@
+from src.utilities.utils import render_bird_container
+
 class Hand:
     '''A generic hand of cards, that can be used for both the player's bird cards and the player's bonus cards.'''
 
@@ -39,6 +41,10 @@ class Hand:
     def discard_card(self, card_name):
         '''Discard a card from the hand'''
         return self.remove_card(card_name)
+    
+    def render(self):
+        '''Render the hand'''
+        print(render_bird_container(bird_container=self.get_card_names_in_hand()))
 
 class BirdHand(Hand):
     '''A hand specifically for bird cards'''

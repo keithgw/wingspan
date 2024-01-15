@@ -112,7 +112,7 @@ class TestPlayer(unittest.TestCase):
         self.assertNotIn(bird, self.player.bird_hand.get_cards_in_hand())
 
         # Check if the bird was added to the game board
-        self.assertIn(bird, self.player.game_board.get_cards())
+        self.assertIn(bird, self.player.game_board.get_birds())
 
         # Check if the player's food supply was decremented by the bird's food cost
         food_cost = bird.get_food_cost()

@@ -65,6 +65,14 @@ class TestHand(unittest.TestCase):
         remove_card_mock.assert_called_once()
         self.assertEqual(discarded_card, 'Osprey')
 
+    def test_render(self):
+        # check that render calls render_bird_container, and prints the returned value
+        with patch('src.entities.hand.render_bird_container', return_value="Mocked render output") as mock_render, \
+            patch('sys.stdout', new=StringIO()) as mock_stdout:
+            self.hand.render()
+            self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
+            mock_render.assert_called_once_with(bird_container=self.hand.get_card_names_in_hand())
+
 class TestBirdHand(unittest.TestCase):
 
     def setUp(self):
@@ -85,7 +93,7 @@ class TestBirdHand(unittest.TestCase):
         self.hand.add_card(Bird(bird_name, 5, 2), bird_name)
         self.hand.play_bird(bird_name=bird_name, game_board=game_board)
         self.assertNotIn(bird_name, self.hand.cards)
-        self.assertIn(bird_name, [bird.get_name() for bird in game_board.get_cards()])
+        self.assertIn(bird_name, [bird.get_name() for bird in game_board.get_birds()])
 
     def test_tuck_card(self):
         card_name = "Osprey"
