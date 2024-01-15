@@ -82,7 +82,7 @@ class TestPlayer(unittest.TestCase):
         legal_actions = self.player._enumerate_legal_actions(empty_tray, empty_deck)
         self.assertNotIn('draw_a_bird', legal_actions)
 
-    @patch('builtins.input', return_value=1)
+    @patch('builtins.input', return_value='1')
     @patch.object(Player, '_enumerate_legal_actions', return_value=['play_a_bird', 'gain_food', 'draw_a_bird'])
     def test_choose_action(self, input, enumerate_legal_actions_mock):
         # An input of 1 should return 'play_a_bird'
