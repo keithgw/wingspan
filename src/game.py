@@ -54,7 +54,7 @@ class WingspanGame:
     def play(self):
         # Main game loop
         while not self.game_state.is_game_over():
-            current_player_idx = self.game_state.determine_player_turn()
+            current_player_idx = self.game_state.get_current_player()
             self.render(current_player_idx)
             current_player = self.players[current_player_idx]
             self.take_turn(current_player)
@@ -75,14 +75,22 @@ class WingspanGame:
         current_player = self.players[current_player_idx]
         # Render the current game state
         self.bird_feeder.render()
+        print("Tray: ")
         self.tray.render()
         print("It is " + current_player.get_name() + "'s turn.")
-        print(current_player.get_turns_remaining() + " turns remaining.")
+        player_turns_remaining = current_player.get_turns_remaining()
+        if player_turns_remaining == 1:
+            print("1 turn remaining.")
+        else:
+            print(str(player_turns_remaining) + " turns remaining.")
+        print(current_player.get_name() + "'s board: ")
         current_player.game_board.render()
+        print(current_player.get_name() + "'s food supply: ")
         current_player.food_supply.render()
+        print(current_player.get_name() + "'s hand: ")
         current_player.bird_hand.render()
 
 if __name__ == "__main__":
     game = WingspanGame()
-    game.setup(NUM_PLAYERS, NUM_TURNS)
+    game.setup(num_turns=NUM_TURNS, num_players=NUM_PLAYERS)
     game.play()
