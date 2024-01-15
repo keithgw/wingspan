@@ -2,6 +2,8 @@ import unittest
 from src.entities.tray import Tray
 from src.entities.bird import Bird
 from src.entities.deck import Deck
+from unittest.mock import patch
+from io import StringIO
 
 class TestTray(unittest.TestCase):
     def setUp(self):
@@ -58,6 +60,13 @@ class TestTray(unittest.TestCase):
         self.tray.flush(discard_pile, full_deck)
         self.assertEqual(self.tray.see_birds_in_tray(), [bird.get_name() for bird in new_birds[:3]])
         self.assertEqual(discard_pile.get_count(), 3)
-
+    
+    def test_render(self):
+        # check that render calls render_bird_container, and prints the returned value
+        with patch('src.entities.tray.render_bird_container', return_value="Mocked render output") as mock_render, \
+            patch('sys.stdout', new=StringIO()) as mock_stdout:
+            self.tray.render()
+            self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
+            mock_render.assert_called_once_with(bird_container=self.tray.see_birds_in_tray(), capacity=self.tray.capacity)
 if __name__ == '__main__':
     unittest.main()

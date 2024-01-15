@@ -1,7 +1,9 @@
 from src.entities.bird import Bird
+from src.utilities.utils import render_bird_container
 
 class Tray:
-    def __init__(self):
+    def __init__(self, capacity=3):
+        self.capacity = capacity
         self.birds = {}
 
     def get_count(self):
@@ -50,3 +52,7 @@ class Tray:
         :type bird: Bird
         '''
         self.birds[bird.get_name()] = bird
+
+    def render(self):
+        '''Render the tray.'''
+        print(render_bird_container(bird_container=self.see_birds_in_tray(), capacity=self.capacity))
