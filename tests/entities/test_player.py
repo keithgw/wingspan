@@ -17,11 +17,19 @@ class TestPlayer(unittest.TestCase):
         for bird in self.birds:
             self.bird_hand.add_card(bird, bird.get_name())
         self.food_supply = FoodSupply(2)
-        self.actions = ['play_a_bird', 'gain_food', 'draw_a_bird']
-        self.player = Player(self.bird_hand, self.food_supply, self.actions)
+        self.player = Player(name="Test Player", bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=5)
         self.game_state = GameState(num_turns=3, num_players=1)
         self.tray = Tray()
         self.bird_deck = Deck(cards = [Bird('Anhinga', 6, 2), Bird('Barred Owl', 3, 1), Bird('Willet', 4, 1), Bird('Carolina Chickadee', 2, 1)])
+
+    def test_get_name(self):
+        name = self.player.get_name()
+        self.assertEqual(name, "Test Player")
+
+    def test_set_name(self):
+        self.player.set_name("New Name")
+        name = self.player.get_name()
+        self.assertEqual(name, "New Name")
 
     def test_get_bird_hand(self):
         bird_hand = self.player.get_bird_hand()
@@ -86,7 +94,7 @@ class TestPlayer(unittest.TestCase):
 
     @patch.object(Player, '_choose_action', return_value='play_a_bird')
     def test_request_action(self, choose_action_mock):
-        player = Player(None, None, None)
+        player = Player(None, None, None, None)
         action = player.request_action(None, None)
         
         # Check if choose_action was called once
@@ -147,6 +155,14 @@ class TestPlayer(unittest.TestCase):
         # this should return 'deck', and Anhinga is the only card left in the deck
         self.player.draw_bird(self.bird_deck, self.tray)
         self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
+
+    def test_end_turn(self):
+        initial_turns_remaining = self.player.get_turns_remaining()
+        self.player.end_turn()
+        self.assertEqual(self.player.turns_remaining, initial_turns_remaining - 1)
+
+    def get_turns_remaining(self):
+        self.assertEqual(self.player.get_turns_remaining(), self.player.turns_remaining)
 
 if __name__ == '__main__':
     unittest.main()

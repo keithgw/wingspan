@@ -50,15 +50,11 @@ class WingspanGame:
         # Initialize the bird tray
         self.tray = Tray()
         self.tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
-    
-    def determine_player_turn(self):
-        # Determine the current player's turn
-        return self.game_state.get_current_player()
-        
+            
     def play(self):
         # Main game loop
         while not self.game_state.is_game_over():
-            current_player = self.determine_player_turn()
+            current_player = self.game_state.determine_player_turn()
             self.take_turn(current_player)
             self.update_game_state()
             self.render()

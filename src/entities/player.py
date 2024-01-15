@@ -6,8 +6,9 @@ class Player:
         self.bird_hand = bird_hand
         self.food_supply = food_supply
         self.num_turns = num_turns
+        self.turns_remaining = num_turns
         self.game_board = GameBoard()
-        self.actions = ["play_a_bird", "gain_food", "draw_bird_cards"] # lay_eggs not implemented yet
+        self.actions = ["play_a_bird", "gain_food", "draw_a_bird"] # lay_eggs not implemented yet
 
     def get_name(self):
         '''
@@ -188,11 +189,11 @@ class Player:
         '''
         Ends the player's turn.
         '''
-        self.num_turns -= 1
+        self.turns_remaining -= 1
 
     def get_turns_remaining(self):
         '''
         Returns the number of turns remaining for the player.
         '''
-        return self.num_turns
+        return self.turns_remaining
 
