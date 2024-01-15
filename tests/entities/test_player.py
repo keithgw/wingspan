@@ -103,18 +103,40 @@ class TestPlayer(unittest.TestCase):
         # Check if the returned action is the same as the action returned by choose_action
         self.assertEqual(action, 'play_a_bird')
 
+    def test_take_action(self):
+        # test that an error is raised if action is not valid
+        with self.assertRaises(Exception):
+            self.player.take_action('invalid_action', None, None, None)
+        
+        # test that play_a_bird is called if action == "play_a_bird"
+        with patch.object(Player, 'play_a_bird') as play_a_bird_mock:
+            self.player.take_action('play_a_bird', None, None, None)
+            play_a_bird_mock.assert_called_once()
+
+        # test that gain_food is called if action == "gain_food"
+        with patch.object(Player, 'gain_food') as gain_food_mock:
+            self.player.take_action('gain_food', None, None, None)
+            gain_food_mock.assert_called_once()
+
+        # test that draw_a_bird is called if action == "draw_a_bird"
+        with patch.object(Player, 'draw_a_bird') as draw_bird_mock:
+            self.player.take_action('draw_a_bird', None, None, None)
+            draw_bird_mock.assert_called_once()
+
     @patch('builtins.input', return_value='Osprey')
-    def test_choose_a_bird(self, input):
+    def test__choose_a_bird_to_play(self, input):
         # An input of 'Osprey' should return the Osprey bird, which should be playable, since its both in the hand and the player has sufficient food
         valid_bird = self.birds[0].get_name()
-        bird = self.player.choose_a_bird()
+        bird = self.player._choose_a_bird_to_play()
         self.assertEqual(bird, valid_bird)
 
     def test_play_a_bird(self):
         bird = self.birds[0]
+        bird_name = bird.get_name()
         initial_food_supply = self.player.food_supply.amount
         final_food_supply = initial_food_supply - bird.get_food_cost()
-        self.player.play_a_bird(bird.get_name())
+        with patch.object(self.player, '_choose_a_bird_to_play', return_value=bird_name):
+            self.player.play_a_bird()
 
         # Check if the bird was removed from the player's hand
         self.assertNotIn(bird, self.player.bird_hand.get_cards_in_hand())
@@ -138,10 +160,10 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(bird_feeder.food_count, 4)
 
     @patch('builtins.input', return_value='deck')
-    def test_draw_bird(self, input):
+    def test_draw_a_bird(self, input):
 
         # empty tray, cards in deck
-        self.player.draw_bird(self.bird_deck, self.tray)
+        self.player.draw_a_bird(self.bird_deck, self.tray)
         # Top card in deck should be in player's hand
         self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
 
@@ -153,7 +175,7 @@ class TestPlayer(unittest.TestCase):
         # top 3 cards in deck should be in tray
         self.tray.flush(discard_pile=discard_pile, bird_deck=self.bird_deck)
         # this should return 'deck', and Anhinga is the only card left in the deck
-        self.player.draw_bird(self.bird_deck, self.tray)
+        self.player.draw_a_bird(self.bird_deck, self.tray)
         self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
 
     def test_end_turn(self):

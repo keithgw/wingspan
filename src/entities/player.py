@@ -103,8 +103,26 @@ class Player:
         '''
         action = self._choose_action(tray=tray, bird_deck=bird_deck)
         return action
+    
+    def take_action(self, action, tray, bird_deck, bird_feeder):
+        '''
+        Takes an action based on the current game state.
 
-    def choose_a_bird(self):
+        Args:
+            action (str): The action to take.
+            tray (Tray): The bird tray.
+            bird_deck (Deck): The bird deck.
+        '''
+        if action not in self.actions:
+            raise Exception(f"Action {action} is not valid.")
+        elif action == self.actions[0]:
+            self.play_a_bird()
+        elif action == self.actions[1]:
+            self.gain_food(bird_feeder)
+        else:
+            self.draw_a_bird(bird_deck, tray)
+
+    def _choose_a_bird_to_play(self):
         '''
         Prompts the player to choose a bird from their hand.
         '''
@@ -117,13 +135,11 @@ class Player:
 
         return chosen_bird
     
-    def play_a_bird(self, bird_name):
+    def play_a_bird(self):
         '''
-        Player plays a bird to the game board.
-
-        Args:
-            bird_name (str): The name of the bird to play.
+        Player is prompted to choose a bird from their hand, and the bird is played to their game board.
         '''
+        bird_name = self._choose_a_bird_to_play()
         food_cost = self.bird_hand.get_card(bird_name).get_food_cost()
         self.food_supply.decrement(food_cost)
         self.bird_hand.play_bird(bird_name, self.game_board)
@@ -139,7 +155,7 @@ class Player:
         bird_feeder.take_food()
         self.food_supply.increment(1)
 
-    def draw_bird(self, bird_deck, tray):
+    def draw_a_bird(self, bird_deck, tray):
         '''
         Prompts the player to choose a bird from the bird deck or the tray.
         
