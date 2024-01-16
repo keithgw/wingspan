@@ -61,7 +61,7 @@ class WingspanGame:
         player.take_action(chosen_action, tray=self.tray, bird_deck=self.bird_deck, bird_feeder=self.bird_feeder)
 
         # End the turn, this updates the game state and player's turn count
-        self.game_state.end_player_turn(player)
+        self.game_state.end_player_turn(player=player, tray=self.tray, bird_deck=self.bird_deck)
 
     def render(self, current_player_idx):
         current_player = self.players[current_player_idx]
