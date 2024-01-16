@@ -53,12 +53,14 @@ class Player:
         legal_actions = []
 
         # Check if player can play a bird
-        birds_in_hand = self.bird_hand.get_cards_in_hand()
-        #TODO: check that the game board is not full
-        if len(birds_in_hand) > 0:
-            # Check if player has enough food to play a bird
-            if any([self.food_supply.can_play_bird(bird) for bird in birds_in_hand]):
-                legal_actions.append(self.actions[0])
+        ## player must have space on the board
+        if not self.game_board.check_if_full():
+            ## player must have a bird in hand
+            birds_in_hand = self.bird_hand.get_cards_in_hand()
+            if len(birds_in_hand) > 0:
+                # player must have enough food to play a bird
+                if any([self.food_supply.can_play_bird(bird) for bird in birds_in_hand]):
+                    legal_actions.append(self.actions[0])
         
         # Player can always gain food
         legal_actions.append(self.actions[1])
