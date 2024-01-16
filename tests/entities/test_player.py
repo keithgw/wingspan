@@ -18,7 +18,7 @@ class TestPlayer(unittest.TestCase):
             self.bird_hand.add_card(bird, bird.get_name())
         self.food_supply = FoodSupply(2)
         self.player = Player(name="Test Player", bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=5)
-        self.game_state = GameState(num_turns=3, num_players=1)
+        self.game_state = GameState(num_turns=5, num_players=1)
         self.tray = Tray()
         self.bird_deck = Deck(cards = [Bird('Anhinga', 6, 2), Bird('Barred Owl', 3, 1), Bird('Willet', 4, 1), Bird('Carolina Chickadee', 2, 1)])
 
@@ -145,7 +145,6 @@ class TestPlayer(unittest.TestCase):
         self.assertIn(bird, self.player.game_board.get_birds())
 
         # Check if the player's food supply was decremented by the bird's food cost
-        food_cost = bird.get_food_cost()
         self.assertEqual(self.player.food_supply.amount, final_food_supply)
 
     def test_gain_food(self):
@@ -179,9 +178,15 @@ class TestPlayer(unittest.TestCase):
         self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
 
     def test_end_turn(self):
+        # Check that the player's turn count is decremented by 1
         initial_turns_remaining = self.player.get_turns_remaining()
         self.player.end_turn()
         self.assertEqual(self.player.turns_remaining, initial_turns_remaining - 1)
+
+        # Check that the player's score is updated
+        self.player.game_board.add_bird(self.birds[0])
+        self.player.end_turn()
+        self.assertEqual(self.player.score, self.birds[0].get_points())
 
     def get_turns_remaining(self):
         self.assertEqual(self.player.get_turns_remaining(), self.player.turns_remaining)

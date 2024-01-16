@@ -50,14 +50,6 @@ class WingspanGame:
         # Initialize the bird tray
         self.tray = Tray()
         self.tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
-            
-    def play(self):
-        # Main game loop
-        while not self.game_state.is_game_over():
-            current_player_idx = self.game_state.get_current_player()
-            self.render(current_player_idx)
-            current_player = self.players[current_player_idx]
-            self.take_turn(current_player)
     
     def take_turn(self, player):
         # Logic for a single player's turn
@@ -89,6 +81,45 @@ class WingspanGame:
         current_player.food_supply.render()
         print(current_player.get_name() + "'s hand: ")
         current_player.bird_hand.render()
+
+    def get_player_scores(self):
+        # Get the scores of all players
+        return [player.get_score() for player in self.players]
+    
+    def determine_winners(self):
+        '''Returns a list of player indices that are tied for the highest score'''
+        # Determine the winner of the game
+        scores = self.get_player_scores()
+
+        return [player_idx for player_idx, score in enumerate(scores) if score == max(scores)]
+
+    def render_game_summary(self):
+        '''Prints the final scores and the winner(s)'''
+        scores = self.get_player_scores()
+        winner_idx = self.determine_winners() # list of player indices that are tied for the highest score
+
+        # check for tie
+        num_winners = len(winner_idx)
+        if num_winners > 1:
+            print(f"It's a {num_winners}-way tie between {', '.join([self.players[idx].get_name() for idx in winner_idx])}")
+        else:
+            print(self.players[winner_idx[0]].get_name() + " wins!")
+
+        print("Final scores:")
+        for player_idx, score in enumerate(scores):
+            print(self.players[player_idx].get_name() + ": " + str(score))
+            self.players[player_idx].game_board.render()
+
+    def play(self):
+        # Main game loop
+        while not self.game_state.is_game_over():
+            current_player_idx = self.game_state.get_current_player()
+            self.render(current_player_idx)
+            current_player = self.players[current_player_idx]
+            self.take_turn(current_player)
+
+            # Game is over, give a game summary
+            self.render_game_summary()
 
 if __name__ == "__main__":
     game = WingspanGame()

@@ -56,7 +56,7 @@ class BirdHand(Hand):
 
     def play_bird(self, bird_name, game_board):
         '''Play a bird from the hand'''
-        game_board.add_card(self.remove_card(bird_name))
+        game_board.add_bird(self.remove_card(bird_name))
 
     def tuck_card(self, card_name):
         '''Tuck a card from the hand'''
