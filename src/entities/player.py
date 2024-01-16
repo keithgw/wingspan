@@ -8,6 +8,7 @@ class Player:
         self.num_turns = num_turns
         self.turns_remaining = num_turns
         self.game_board = GameBoard()
+        self.score = 0
         self.actions = ["play_a_bird", "gain_food", "draw_a_bird"] # lay_eggs not implemented yet
 
     def get_name(self):
@@ -194,12 +195,22 @@ class Player:
                     chosen_bird = input(prompt).strip()
         else:
             self.bird_hand.draw_bird_from_tray(tray, chosen_bird)
+
+    def get_score(self):
+        '''
+        Returns the player's score.
+        '''
+        return self.score
             
     def end_turn(self):
         '''
         Ends the player's turn.
         '''
+        # decrement the player's turn count
         self.turns_remaining -= 1
+
+        # update the player's score
+        self.score = self.game_board.get_score()
 
     def get_turns_remaining(self):
         '''

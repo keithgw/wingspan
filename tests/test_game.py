@@ -29,6 +29,19 @@ class TestWingspanGame(unittest.TestCase):
         cards_left_in_deck = len(bird_list) - self.num_players * self.num_starting_cards - 3
         self.assertEqual(self.game.bird_deck.get_count(), cards_left_in_deck)
         self.assertEqual(self.game.discard_pile.get_count(), 0)
+
+    def test_get_player_scores(self):
+        # Assertions to test the scoring of the game object
+        self.assertEqual(self.game.get_player_scores(), [0] * self.num_players)
+
+    def test_determine_winners_there_is_a_tie(self):
+        # Assertions to test the determination of winners
+        self.assertEqual(self.game.determine_winners(), [0, 1])
+
+    def test_determine_winners_there_is_a_winner(self):
+        # Assertions to test the determination of winners
+        self.game.players[0].score = 100
+        self.assertEqual(self.game.determine_winners(), [0])
         
 if __name__ == "__main__":
     unittest.main()
