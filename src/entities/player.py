@@ -152,26 +152,21 @@ class Player:
         bird_feeder.take_food()
         self.food_supply.increment(1)
 
-    def draw_a_bird(self, bird_deck, tray):
-        '''
-        Prompts the player to choose a bird from the bird deck or the tray.
-        
-        Args:
-            bird_deck (Deck): The bird deck.
-            tray (Tray): The bird tray.
-        '''
+    def _choose_a_bird_to_draw(self, bird_deck, tray):
         # Check if the bird deck and/or tray are empty
         deck_is_empty = bird_deck.get_count() == 0
         tray_is_empty = tray.get_count() == 0
-        
-        # If the tray is empty, draw from the bird deck
+
+        # This shouldn't happen, since draw_a_bird won't be a legal action in this case.
+        if deck_is_empty and tray_is_empty:
+            raise Exception("The bird deck and tray are empty. Cannot draw a bird.")
+
         prompt_from_tray = "Choose a bird from the tray: " + "\n" +  "\n".join(tray.see_birds_in_tray())
         prompt_from_deck = "type 'deck' to draw from the bird deck."
+
+        # If the tray is empty, draw from the bird deck
         if tray_is_empty:
-            if deck_is_empty:
-                pass #TODO: Handle empty deck and tray
-            else:
-                prompt = "The tray is empty, " + prompt_from_deck
+            prompt = "The tray is empty, " + prompt_from_deck
         elif deck_is_empty:
             prompt = prompt_from_tray
         else:
@@ -183,6 +178,11 @@ class Player:
             print(f"{chosen_bird} is not a valid bird.")
             chosen_bird = input(prompt).strip()
 
+        return chosen_bird
+
+    def draw_a_bird(self, bird_deck, tray):
+        chosen_bird = self._choose_a_bird_to_draw(bird_deck, tray)
+
         # Remove the bird from the tray or deck
         if chosen_bird == "deck":
             try:
@@ -191,10 +191,7 @@ class Player:
             except Exception as e:
                 # this should only happen if the deck is empty, but the user knows to type 'deck' in that case
                 print(f"Error: {e}")
-                chosen_bird = input(prompt).strip()
-                while chosen_bird not in tray.see_birds_in_tray():
-                    print(f"{chosen_bird} is not a valid bird.")
-                    chosen_bird = input(prompt).strip()
+                chosen_bird = self._choose_a_bird_to_draw(bird_deck, tray)
         else:
             self.bird_hand.draw_bird_from_tray(tray, chosen_bird)
 
