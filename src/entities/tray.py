@@ -22,40 +22,53 @@ class Tray:
         '''
         Draw a bird from the tray.
         
-        :param common_name: The common name of the bird to draw.
-        :type common_name: str
+        Args:
+            common_name (str): The common name of the bird to draw.
         '''
 
         if common_name not in self.birds:
             raise ValueError(f"{common_name} does not exist in the tray.")
         return self.birds.pop(common_name)
-    
-    def flush(self, discard_pile, bird_deck):
-        '''
-        Flush the tray and add all birds to the discard pile.
-        Refill the tray with birds from the deck.
-        
-        :param dicsard_pile: The discard pile.
-        :type deck: Deck
-        :param bird_deck: The bird deck
-        :type deck: Deck
-        '''
-
-        while len(self.birds) > 0:
-            discard_pile.add_card(self.birds.popitem()[1])
-        
-        while len(self.birds) < 3 and bird_deck.get_count() > 0:
-            bird = bird_deck.draw_card()
-            self.add_bird(bird)
 
     def add_bird(self, bird):
         '''
         Add a bird to the tray.
         
-        :param bird: The bird to add.
-        :type bird: Bird
+        Args:
+            bird (Bird): The bird to add.
         '''
         self.birds[bird.get_name()] = bird
+
+    def is_not_full(self):
+        '''Public method that returns True if the tray is not full, False otherwise.'''
+        return self.get_count() < self.capacity
+    
+    def refill(self, bird_deck):
+        '''
+        Refill the tray with birds from the deck.
+        
+        Args:
+            bird_deck (Deck): The bird deck.
+        '''
+
+        while self.is_not_full() and bird_deck.get_count() > 0:
+            bird = bird_deck.draw_card()
+            self.add_bird(bird)
+
+    def flush(self, discard_pile, bird_deck):
+        '''
+        Flush the tray and add all birds to the discard pile.
+        Refill the tray with birds from the deck.
+        
+        Args:
+            discard_pile (Deck): The discard pile.
+            bird_deck (Deck): The bird deck.
+        '''
+
+        while len(self.birds) > 0:
+            discard_pile.add_card(self.birds.popitem()[1])
+        
+        self.refill(bird_deck)
 
     def render(self):
         '''Render the tray.'''

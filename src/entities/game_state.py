@@ -22,13 +22,20 @@ class GameState:
         '''Returns the current player'''
         return self.game_turn % self.num_players
 
-    def end_player_turn(self, player):
+    def end_player_turn(self, player, tray, bird_deck):
         '''
         Ends the given player's turn.
 
         Args:
             player (Player): The player whose turn is ending.
+            tray (Tray): The bird tray, which should be full at the end of a turn.
+            bird_deck (Deck): The bird deck from which the tray is refilled.
         '''
+        # check if the tray needs to be refilled
+        if tray.is_not_full():
+            tray.refill(bird_deck)
+        
+        # manage turn accounting
         player.end_turn()
         self.game_turn += 1
 
