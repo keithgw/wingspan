@@ -72,23 +72,13 @@ class Player:
         return legal_actions
     
     def _choose_action(self, tray, bird_deck):
-        actions_map = {
-            '1': self.actions[0],
-            '2': self.actions[1],
-            '3': self.actions[2]
-        }
-        legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
-        
-        # Prompt the player to choose an action
-        prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
-        chosen_action = input(prompt).strip()
+        '''
+        Prompts the player to choose an action and returns the chosen action.
 
-        # Check if the chosen action is legal
-        while actions_map[chosen_action] not in legal_actions:
-            print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
-            chosen_action = input(prompt).strip()
-
-        return actions_map[chosen_action]
+        Returns:
+            chosen_action (str): The chosen action by the player.
+        '''
+        raise NotImplementedError
 
     def request_action(self, tray, bird_deck):
         '''
@@ -122,15 +112,11 @@ class Player:
     def _choose_a_bird_to_play(self):
         '''
         Prompts the player to choose a bird from their hand.
-        '''
-        legal_birds_in_hand = [bird.get_name() for bird in self.bird_hand.get_cards_in_hand() if self.food_supply.can_play_bird(bird)]
-        prompt = "Choose a bird to play: " + "\n" + "\n".join(legal_birds_in_hand) + "\n"
-        chosen_bird = input(prompt)
-        while chosen_bird not in self.bird_hand.get_card_names_in_hand():
-            print(f"{chosen_bird} is not a valid bird. {prompt}")
-            chosen_bird = input(prompt)
 
-        return chosen_bird
+        Returns:
+            chosen_bird (str): The name of the chosen bird.
+        '''
+        raise NotImplementedError
     
     def play_a_bird(self):
         '''
@@ -153,32 +139,20 @@ class Player:
         self.food_supply.increment(1)
 
     def _choose_a_bird_to_draw(self, bird_deck, tray):
-        # Check if the bird deck and/or tray are empty
-        deck_is_empty = bird_deck.get_count() == 0
-        tray_is_empty = tray.get_count() == 0
+        '''
+        Prompt the player to choose a bird to draw from either the bird deck or the tray.
 
-        # This shouldn't happen, since draw_a_bird won't be a legal action in this case.
-        if deck_is_empty and tray_is_empty:
-            raise Exception("The bird deck and tray are empty. Cannot draw a bird.")
+        Args:
+            bird_deck (BirdDeck): The bird deck object.
+            tray (Tray): The tray object.
 
-        prompt_from_tray = "Choose a bird from the tray: " + "\n" +  "\n".join(tray.see_birds_in_tray())
-        prompt_from_deck = "type 'deck' to draw from the bird deck."
+        Returns:
+            chosen_bird (str): The name of the chosen bird, 'deck' if drawing from the deck.
 
-        # If the tray is empty, draw from the bird deck
-        if tray_is_empty:
-            prompt = "The tray is empty, " + prompt_from_deck
-        elif deck_is_empty:
-            prompt = prompt_from_tray
-        else:
-            prompt = prompt_from_tray + "\nor " + prompt_from_deck
-
-        # Prompt the player to choose a bird
-        chosen_bird = input(prompt).strip()
-        while chosen_bird not in tray.see_birds_in_tray() and chosen_bird != "deck":
-            print(f"{chosen_bird} is not a valid bird.")
-            chosen_bird = input(prompt).strip()
-
-        return chosen_bird
+        Raises:
+            Exception: If both the bird deck and tray are empty.
+        '''
+        raise NotImplementedError
 
     def draw_a_bird(self, bird_deck, tray):
         chosen_bird = self._choose_a_bird_to_draw(bird_deck, tray)
@@ -217,3 +191,98 @@ class Player:
         '''
         return self.turns_remaining
 
+class HumanPlayer(Player):
+    def _choose_action(self, tray, bird_deck):
+        '''
+        Prompts the player to choose an action and returns the chosen action.
+
+        Returns:
+            chosen_action (str): The chosen action by the player.
+        '''
+        actions_map = {
+            '1': self.actions[0],
+            '2': self.actions[1],
+            '3': self.actions[2]
+        }
+        legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
+        
+        # Prompt the player to choose an action
+        prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
+        chosen_action = input(prompt).strip()
+
+        # Check if the chosen action is legal
+        while actions_map[chosen_action] not in legal_actions:
+            print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
+            chosen_action = input(prompt).strip()
+
+        return actions_map[chosen_action]
+
+    def _choose_a_bird_to_play(self):
+        '''
+        Prompts the player to choose a bird from their hand.
+
+        Returns:
+            chosen_bird (str): The name of the chosen bird.
+        '''
+        legal_birds_in_hand = [bird.get_name() for bird in self.bird_hand.get_cards_in_hand() if self.food_supply.can_play_bird(bird)]
+        prompt = "Choose a bird to play: " + "\n" + "\n".join(legal_birds_in_hand) + "\n"
+        chosen_bird = input(prompt)
+        while chosen_bird not in self.bird_hand.get_card_names_in_hand():
+            print(f"{chosen_bird} is not a valid bird. {prompt}")
+            chosen_bird = input(prompt)
+
+        return chosen_bird
+
+    def _choose_a_bird_to_draw(self, bird_deck, tray):
+        '''
+        Prompt the player to choose a bird to draw from either the bird deck or the tray.
+
+        Args:
+            bird_deck (BirdDeck): The bird deck object.
+            tray (Tray): The tray object.
+
+        Returns:
+            chosen_bird (str): The name of the chosen bird, 'deck' if drawing from the deck.
+
+        Raises:
+            Exception: If both the bird deck and tray are empty.
+        '''
+        # Check if the bird deck and/or tray are empty
+        deck_is_empty = bird_deck.get_count() == 0
+        tray_is_empty = tray.get_count() == 0
+
+        # This shouldn't happen, since draw_a_bird won't be a legal action in this case.
+        if deck_is_empty and tray_is_empty:
+            raise Exception("The bird deck and tray are empty. Cannot draw a bird.")
+
+        prompt_from_tray = "Choose a bird from the tray: " + "\n" +  "\n".join(tray.see_birds_in_tray())
+        prompt_from_deck = "type 'deck' to draw from the bird deck."
+
+        # If the tray is empty, draw from the bird deck
+        if tray_is_empty:
+            prompt = "The tray is empty, " + prompt_from_deck
+        elif deck_is_empty:
+            prompt = prompt_from_tray
+        else:
+            prompt = prompt_from_tray + "\nor " + prompt_from_deck
+
+        # Prompt the player to choose a bird
+        chosen_bird = input(prompt).strip()
+        while chosen_bird not in tray.see_birds_in_tray() and chosen_bird != "deck":
+            print(f"{chosen_bird} is not a valid bird.")
+            chosen_bird = input(prompt).strip()
+
+        return chosen_bird
+
+class BotPlayer(Player):
+    def _choose_action(self):
+        # Implement the method for a bot player
+        pass
+
+    def _choose_a_bird_to_play(self):
+        # Implement the method for a bot player
+        pass
+
+    def _choose_a_bird_to_draw(self, bird_deck, tray):
+        # Implement the method for a bot player
+        pass
