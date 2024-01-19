@@ -2,7 +2,7 @@ import unittest
 from src.entities.hand import BirdHand
 from src.entities.bird import Bird
 from src.entities.food_supply import FoodSupply
-from src.entities.player import Player, HumanPlayer
+from src.entities.player import Player, HumanPlayer, BotPlayer
 from src.entities.game_state import GameState
 from src.entities.birdfeeder import BirdFeeder
 from src.entities.tray import Tray
@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 class TestPlayerBase(unittest.TestCase):
     def setUp(self):
+            self.name = "Test Player"
             self.num_turns = 5
             self.bird_hand = BirdHand()
             self.birds = [Bird('Osprey', 5, 1), Bird('Bald Eagle', 9, 3), Bird('Peregrine Falcon', 5, 2)]
@@ -25,7 +26,7 @@ class TestPlayerBase(unittest.TestCase):
 class TestPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
-        self.player = Player(name="Test Player", bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        self.player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
     def test_get_name(self):
         name = self.player.get_name()
@@ -150,7 +151,7 @@ class TestPlayer(TestPlayerBase):
     def test_draw_a_bird(self, input):
         with patch.object(self.player, '_choose_a_bird_to_draw', return_value='deck'):
             # empty tray, empty deck
-            self.player.draw_a_bird(self.bird_deck, self.tray)
+            self.player.draw_a_bird(self.tray, self.bird_deck)
             # Top card in deck should be in player's hand
             self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
 
@@ -163,7 +164,7 @@ class TestPlayer(TestPlayerBase):
         self.tray.flush(discard_pile=discard_pile, bird_deck=self.bird_deck)
         # this should return 'deck', and Anhinga is the only card left in the deck
         with patch.object(self.player, '_choose_a_bird_to_draw', return_value='deck'):
-            self.player.draw_a_bird(self.bird_deck, self.tray)
+            self.player.draw_a_bird(self.tray, self.bird_deck)
             self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
 
     def test_end_turn(self):
@@ -183,7 +184,7 @@ class TestPlayer(TestPlayerBase):
 class TestHumanPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
-        self.player = HumanPlayer(name="Test Player", bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        self.player = HumanPlayer(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
     @patch('builtins.input', return_value='1')
     @patch.object(Player, '_enumerate_legal_actions', return_value=['play_a_bird', 'gain_food', 'draw_a_bird'])
@@ -207,6 +208,27 @@ class TestHumanPlayer(TestPlayerBase):
         # An input of 'deck' should return 'deck'
         choice = self.player._choose_a_bird_to_draw(bird_deck=self.bird_deck, tray=self.tray)
         self.assertEqual(choice, 'deck')
+
+class TestBotPlayer(TestPlayerBase):
+    def setUp(self):
+        super().setUp()
+        self.player = BotPlayer(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+
+    def test__choose_action(self):
+        # Check that the action returned is one of the legal actions
+        legal_actions = self.player._enumerate_legal_actions(self.tray, self.bird_deck)
+        action = self.player._choose_action(self.tray, self.bird_deck)
+        self.assertIn(action, legal_actions)
+
+    def test__choose_a_bird_to_play(self):
+        # Check that the bird returned is one of the birds in the player's hand
+        bird = self.player._choose_a_bird_to_play()
+        self.assertIn(bird, self.player.bird_hand.get_card_names_in_hand())
+
+    def test__choose_a_bird_to_draw(self):
+        # Check that the bird returned is one of the birds in the tray or 'deck'
+        choice = self.player._choose_a_bird_to_draw(self.tray, self.bird_deck)
+        self.assertIn(choice, self.tray.see_birds_in_tray() + ['deck'])
         
 if __name__ == '__main__':
     unittest.main()

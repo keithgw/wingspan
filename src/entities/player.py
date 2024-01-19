@@ -1,4 +1,6 @@
 from src.entities.gameboard import GameBoard
+from src.rl.reinforcement_learning import State, Policy
+import numpy as np
 
 class Player:
     def __init__(self, name, bird_hand, food_supply, num_turns):
@@ -107,7 +109,7 @@ class Player:
         elif action == self.actions[1]:
             self.gain_food(bird_feeder)
         else:
-            self.draw_a_bird(bird_deck, tray)
+            self.draw_a_bird(tray, bird_deck)
 
     def _choose_a_bird_to_play(self):
         '''
@@ -138,13 +140,13 @@ class Player:
         bird_feeder.take_food()
         self.food_supply.increment(1)
 
-    def _choose_a_bird_to_draw(self, bird_deck, tray):
+    def _choose_a_bird_to_draw(self, tray, bird_deck):
         '''
         Prompt the player to choose a bird to draw from either the bird deck or the tray.
 
         Args:
-            bird_deck (BirdDeck): The bird deck object.
             tray (Tray): The tray object.
+            bird_deck (BirdDeck): The bird deck object.
 
         Returns:
             chosen_bird (str): The name of the chosen bird, 'deck' if drawing from the deck.
@@ -154,8 +156,8 @@ class Player:
         '''
         raise NotImplementedError
 
-    def draw_a_bird(self, bird_deck, tray):
-        chosen_bird = self._choose_a_bird_to_draw(bird_deck, tray)
+    def draw_a_bird(self, tray, bird_deck):
+        chosen_bird = self._choose_a_bird_to_draw(tray, bird_deck)
 
         # Remove the bird from the tray or deck
         if chosen_bird == "deck":
@@ -165,7 +167,7 @@ class Player:
             except Exception as e:
                 # this should only happen if the deck is empty, but the user knows to type 'deck' in that case
                 print(f"Error: {e}")
-                chosen_bird = self._choose_a_bird_to_draw(bird_deck, tray)
+                chosen_bird = self._choose_a_bird_to_draw(tray, bird_deck)
         else:
             self.bird_hand.draw_bird_from_tray(tray, chosen_bird)
 
@@ -233,14 +235,14 @@ class HumanPlayer(Player):
 
         return chosen_bird
 
-    def _choose_a_bird_to_draw(self, bird_deck, tray):
+    def _choose_a_bird_to_draw(self, tray, bird_deck):
         '''
         Prompt the player to choose a bird to draw from either the bird deck or the tray.
 
         Args:
-            bird_deck (BirdDeck): The bird deck object.
             tray (Tray): The tray object.
-
+            bird_deck (BirdDeck): The bird deck object.
+            
         Returns:
             chosen_bird (str): The name of the chosen bird, 'deck' if drawing from the deck.
 
@@ -275,14 +277,70 @@ class HumanPlayer(Player):
         return chosen_bird
 
 class BotPlayer(Player):
-    def _choose_action(self):
-        # Implement the method for a bot player
-        pass
+    def __init__(self, policy=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if policy is None:
+            self.policy = Policy()
+        else:
+            self.policy = policy  # Load learned policy here
+
+    def _get_state(self, phase, tray=None, bird_deck=None, legal_actions=None):
+        # Convert the current game state to a format that the policy can understand
+        state = State(
+            game_board=self.game_board,
+            bird_hand=self.bird_hand,
+            food_supply=self.food_supply,
+            phase=phase,
+            tray=tray,
+            bird_deck=bird_deck,
+            legal_actions=legal_actions
+        )
+        return state
+
+    def _choose_action(self, tray, bird_deck):
+        # enumerate the legal actions
+        legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
+
+        # Convert the current game state to a format that the policy can understand
+        state = self._get_state(phase='choose_action', tray=tray, bird_deck=bird_deck, legal_actions=legal_actions)
+
+        # Use the policy to get the probabilities of each action
+        action_probs = self.policy(state)
+
+        # Choose an action according to the probabilities
+        action_index = np.random.choice(len(action_probs), p=action_probs)
+        action = legal_actions[action_index]
+
+        return action
 
     def _choose_a_bird_to_play(self):
-        # Implement the method for a bot player
-        pass
+        # Convert the current game state to a format that the policy can understand
+        state = self._get_state(phase='choose_a_bird_to_play')
 
-    def _choose_a_bird_to_draw(self, bird_deck, tray):
-        # Implement the method for a bot player
-        pass
+        # Use the policy to get the probabilities of each action
+        action_probs = self.policy(state)
+
+        # Choose an action according to the probabilities
+        action_index = np.random.choice(len(action_probs), p=action_probs)
+
+        # Convert the action back to a bird
+        birds_in_hand = self.bird_hand.get_card_names_in_hand()
+        chosen_bird = birds_in_hand[action_index]
+
+        return chosen_bird
+        
+    def _choose_a_bird_to_draw(self, tray, bird_deck):
+        # Convert the current game state to a format that the policy can understand
+        state = self._get_state(phase='choose_a_bird_to_draw', tray=tray, bird_deck=bird_deck)
+
+        # Use the policy to get the probabilities of each action
+        action_probs = self.policy(state)
+
+        # Choose an action according to the probabilities
+        action_index = np.random.choice(len(action_probs), p=action_probs)
+
+        # Convert the action back to a bird
+        choices = tray.see_birds_in_tray() + ["deck"]
+        chosen_bird = choices[action_index]
+
+        return chosen_bird
