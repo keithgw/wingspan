@@ -19,7 +19,7 @@ class TestPlayerBase(unittest.TestCase):
             for bird in self.birds:
                 self.bird_hand.add_card(bird, bird.get_name())
             self.food_supply = FoodSupply(2)
-            self.game_state = GameState(num_turns=self.num_turns, num_players=1)
+            self.game_state = GameState(num_players=1, num_turns=self.num_turns)
             self.tray = Tray()
             self.bird_deck = Deck(cards = [Bird('Anhinga', 6, 2), Bird('Barred Owl', 3, 1), Bird('Willet', 4, 1), Bird('Carolina Chickadee', 2, 1)])
 

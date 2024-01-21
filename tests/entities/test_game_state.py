@@ -11,7 +11,7 @@ class TestGameState(unittest.TestCase):
     def setUp(self):
         self.num_turns = 10
         self.num_players = 4
-        self.game_state = GameState(num_turns=self.num_turns, num_players=self.num_players)  # Example initialization with 10 turns and 4 players
+        self.game_state = GameState(num_players=self.num_players, num_turns=self.num_turns)  # Example initialization with 10 turns and 4 players
         self.test_player = Player(name="Test Player", bird_hand=BirdHand(), food_supply=FoodSupply(), num_turns=self.num_turns)
         self.bird_deck = Deck()
         self.tray = Tray()
