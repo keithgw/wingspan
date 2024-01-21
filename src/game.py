@@ -1,25 +1,42 @@
 from src.entities.game_state import GameState
-from src.entities.gameboard import GameBoard
 from src.entities.birdfeeder import BirdFeeder
 from src.entities.deck import Deck
 from data.bird_list import birds as bird_list
 from src.entities.hand import BirdHand
 from src.entities.tray import Tray
 from src.entities.food_supply import FoodSupply
-from src.entities.player import Player
+from src.entities.player import HumanPlayer, BotPlayer
+from argparse import ArgumentParser
 
 # Constants
 TOTAL_ALLOWED_IN_STARTING_HAND = 5
-NUM_PLAYERS = 1 #TODO: get these from STDIN
-NUM_TURNS = 10
+DEFAULT_NUM_PLAYERS = 2
+DEFAULT_NUM_HUMAN = 0
+DEFAULT_NUM_TURNS = 10
+DEFAULT_NUM_STARTING_CARDS = 2
 
 class WingspanGame:
     def __init__(self):
         self.discard_pile = Deck()
 
-    def setup(self, num_turns, num_players, num_starting_cards=2):
+    def setup(self, 
+              num_players=DEFAULT_NUM_PLAYERS, 
+              num_human=DEFAULT_NUM_HUMAN, 
+              num_turns=DEFAULT_NUM_TURNS, 
+              num_starting_cards=DEFAULT_NUM_STARTING_CARDS):
+        
+        # Validate inputs
+        if num_human > num_players:
+            raise ValueError("Number of human players cannot exceed total number of players.")
+        elif num_players < 1:
+            raise ValueError("Number of players must be at least 1.")
+        elif num_turns < 1:
+            raise ValueError("Number of turns must be at least 1.")
+        elif num_starting_cards < 0:
+            raise ValueError("Number of starting cards cannot be negative.")
+
         # Initizialize the game state, this tracks the current turn and player
-        self.game_state = GameState(num_turns=num_turns, num_players=num_players)
+        self.game_state = GameState(num_players=num_players, num_turns=num_turns)
 
         # Initialize the bird feeder
         self.bird_feeder = BirdFeeder()
@@ -33,19 +50,28 @@ class WingspanGame:
 
         # Initialize the players
         self.players = [None] * num_players
+        turn_order = ['human'] * num_human + ['bot'] * (num_players - num_human) # TODO: make this randomizable or settable
+
+        # set up each player
         for player in range(num_players):
             # deal hand
             hand = BirdHand()
             for _ in range(num_starting_cards):
                 bird = self.bird_deck.draw_card()
                 hand.add_card(bird, bird.get_name())
+
             # distribute food
             food_supply = FoodSupply()
             starting_food = TOTAL_ALLOWED_IN_STARTING_HAND - len(hand.get_cards_in_hand())
             food_supply.increment(starting_food)
+
             # create player
-            player_name = "Player " + str(player + 1)
-            self.players[player] = Player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+            if turn_order[player] == 'human':
+                player_name = input(f"What is Player {player + 1}'s name? ")
+                self.players[player] = HumanPlayer(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+            else:
+                player_name = f"Bot {player + 1}"
+                self.players[player] = BotPlayer(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
 
         # Initialize the bird tray
         self.tray = Tray()
@@ -114,14 +140,22 @@ class WingspanGame:
         # Main game loop
         while not self.game_state.is_game_over():
             current_player_idx = self.game_state.get_current_player()
-            self.render(current_player_idx)
+            self.render(current_player_idx) #TODO: make optional
             current_player = self.players[current_player_idx]
             self.take_turn(current_player)
 
-            # Game is over, give a game summary
-            self.render_game_summary()
+        # Game is over, give a game summary
+        self.render_game_summary() #TODO: make optional
 
 if __name__ == "__main__":
+    parser = ArgumentParser(description='Set up a game of Wingspan.')
+    parser.add_argument('--num_players', type=int, default=DEFAULT_NUM_PLAYERS, help='Number of players in the game')
+    parser.add_argument('--num_human', type=int, default=DEFAULT_NUM_HUMAN, help='Number of human players in the game')
+    parser.add_argument('--num_turns', type=int, default=DEFAULT_NUM_TURNS, help='Number of turns in the game')
+    parser.add_argument('--num_starting_cards', type=int, default=DEFAULT_NUM_STARTING_CARDS, help='Number of cards in each player\'s starting hand')
+
+    args = parser.parse_args()
+
     game = WingspanGame()
-    game.setup(num_turns=NUM_TURNS, num_players=NUM_PLAYERS)
+    game.setup(num_players=args.num_players, num_human=args.num_human, num_turns=args.num_turns, num_starting_cards=args.num_starting_cards)
     game.play()
