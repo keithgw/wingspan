@@ -22,6 +22,20 @@ class Policy:
 
     def _policy_choose_action(self, legal_actions):
         # Return probabilities for the actions 'play_a_bird', 'gain_food', 'draw_a_card'
+        raise NotImplementedError
+
+    def _policy_choose_a_bird_to_play(self, hand, food_supply):
+        # Return probabilities for the actions 'play_bird_i' for i in hand
+        raise NotImplementedError
+
+
+    def _policy_choose_a_bird_to_draw(self, tray, deck):
+        # Return probabilities for the actions 'choose_bird_i' for i in tray, 'choose_from_deck'
+        raise NotImplementedError
+
+class RandomPolicy(Policy):
+    def _policy_choose_action(self, legal_actions):
+        # Return probabilities for the actions 'play_a_bird', 'gain_food', 'draw_a_card'
 
         # uniform random policy
         probabilities = [1/len(legal_actions)] * len(legal_actions)

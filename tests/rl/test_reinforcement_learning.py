@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock
-from src.rl.reinforcement_learning import State, Policy
+from src.rl.reinforcement_learning import State, RandomPolicy
 
 class TestState(unittest.TestCase):
     def setUp(self):
@@ -31,9 +31,9 @@ class TestState(unittest.TestCase):
         self.assertEqual(state.bird_deck, self.bird_deck)
         self.assertEqual(state.legal_actions, self.legal_actions)
 
-class TestPolicy(unittest.TestCase):
+class TestRandomPolicy(unittest.TestCase):
     def setUp(self):
-        self.policy = Policy()
+        self.policy = RandomPolicy()
 
     def test_policy_choose_action_three_actions(self):
         legal_actions = ['play_a_bird', 'gain_food', 'draw_a_card']
