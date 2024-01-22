@@ -1,5 +1,5 @@
 from src.entities.gameboard import GameBoard
-from src.rl.reinforcement_learning import State, Policy
+from src.rl.reinforcement_learning import State, RandomPolicy
 import numpy as np
 
 class Player:
@@ -279,8 +279,12 @@ class HumanPlayer(Player):
 class BotPlayer(Player):
     def __init__(self, policy=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        '''
+        Args:
+            policy (Policy): The policy to use for the bot. If None, a random policy will be used.
+        '''
         if policy is None:
-            self.policy = Policy()
+            self.policy = RandomPolicy()
         else:
             self.policy = policy  # Load learned policy here
 
