@@ -23,12 +23,12 @@ class TestDeck(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.deck.draw_card()
 
-    def test_shuffle_deck(self):
+    def test_shuffle(self):
         # Create a large, but simple deck to make failure due to shuffling returning the same exact deck unlikely.
         for letter in "abcdefghijkl":
             self.deck.add_card(letter)
         original_deck = self.deck.cards.copy()
-        self.deck.shuffle_deck()
+        self.deck.shuffle()
         # Check that the deck has the same cards after shuffling
         self.assertEqual(set(self.deck.cards), set(original_deck))
         # Check that the order of cards has changed (most of the time)

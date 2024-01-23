@@ -46,7 +46,7 @@ class WingspanGame:
         self.bird_deck = Deck()
         for bird in bird_list:
             self.bird_deck.add_card(bird)
-        self.bird_deck.shuffle_deck()
+        self.bird_deck.shuffle()
 
         # Initialize the players
         self.players = [None] * num_players
@@ -76,6 +76,7 @@ class WingspanGame:
         # Initialize the bird tray
         self.tray = Tray()
         self.tray.flush(discard_pile=self.discard_pile, bird_deck=self.bird_deck)
+        #TODO: for each BotPlayer, update their known_missing_cards set with the cards in the tray
     
     def take_turn(self, player):
         # Logic for a single player's turn
