@@ -288,6 +288,8 @@ class BotPlayer(Player):
         else:
             self.policy = policy  # Load learned policy here
 
+        #TODO: add known missing cards
+
     def _get_state(self, phase, tray=None, bird_deck=None, legal_actions=None):
         # Convert the current game state to a format that the policy can understand
         state = State(
@@ -299,6 +301,7 @@ class BotPlayer(Player):
             bird_deck=bird_deck,
             legal_actions=legal_actions
         )
+        #TODO: update known_missing_cards
         return state
 
     def _choose_action(self, tray, bird_deck):

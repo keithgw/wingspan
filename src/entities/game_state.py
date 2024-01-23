@@ -34,6 +34,7 @@ class GameState:
         # check if the tray needs to be refilled
         if tray.is_not_full():
             tray.refill(bird_deck)
+            #TODO: update known_missing_cards for each BotPlayer
         
         # manage turn accounting
         player.end_turn()

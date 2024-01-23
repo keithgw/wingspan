@@ -55,6 +55,8 @@ class Tray:
             bird = bird_deck.draw_card()
             self.add_bird(bird)
 
+        #TODO: return birds taht were added to the tray
+
     def flush(self, discard_pile, bird_deck):
         '''
         Flush the tray and add all birds to the discard pile.
@@ -69,6 +71,8 @@ class Tray:
             discard_pile.add_card(self.birds.popitem()[1])
         
         self.refill(bird_deck)
+
+        #TODO: return birds that were added to the tray
 
     def render(self):
         '''Render the tray.'''
