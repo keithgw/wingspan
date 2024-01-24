@@ -1,6 +1,9 @@
 from src.entities.gameboard import GameBoard
 from src.rl.reinforcement_learning import State, RandomPolicy
 import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.entities.game_state import GameState
 
 class Player:
     def __init__(self, name, bird_hand, food_supply, num_turns):
@@ -73,7 +76,7 @@ class Player:
 
         return legal_actions
     
-    def _choose_action(self, tray, bird_deck):
+    def _choose_action(self, game_state: 'GameState') -> str:
         '''
         Prompts the player to choose an action and returns the chosen action.
 
@@ -82,34 +85,32 @@ class Player:
         '''
         raise NotImplementedError
 
-    def request_action(self, tray, bird_deck):
+    def request_action(self, game_state: 'GameState') -> str:
         '''
         Chooses an action to take based on the current game state and returns it.
 
         Args:
-            tray (Tray): The bird tray.
-            bird_deck (Deck): The bird deck.
+            game_state (GameState): The current game state.
         '''
-        action = self._choose_action(tray=tray, bird_deck=bird_deck)
+        action = self._choose_action(game_state=game_state)
         return action
     
-    def take_action(self, action, tray, bird_deck, bird_feeder):
+    def take_action(self, action: str, game_state: 'GameState') -> None:
         '''
         Takes an action based on the current game state.
 
         Args:
             action (str): The action to take.
-            tray (Tray): The bird tray.
-            bird_deck (Deck): The bird deck.
+            game_state (GameState): The current game state.
         '''
         if action not in self.actions:
             raise Exception(f"Action {action} is not valid.")
         elif action == self.actions[0]:
             self.play_a_bird()
         elif action == self.actions[1]:
-            self.gain_food(bird_feeder)
+            self.gain_food(game_state.get_bird_feeder())
         else:
-            self.draw_a_bird(tray, bird_deck)
+            self.draw_a_bird(game_state.get_tray(), game_state.get_bird_deck())
 
     def _choose_a_bird_to_play(self):
         '''
@@ -194,7 +195,7 @@ class Player:
         return self.turns_remaining
 
 class HumanPlayer(Player):
-    def _choose_action(self, tray, bird_deck):
+    def _choose_action(self, game_state: 'GameState') -> str:
         '''
         Prompts the player to choose an action and returns the chosen action.
 
@@ -206,7 +207,7 @@ class HumanPlayer(Player):
             '2': self.actions[1],
             '3': self.actions[2]
         }
-        legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
+        legal_actions = self._enumerate_legal_actions(tray=game_state.get_tray(), bird_deck=game_state.get_bird_deck())
         
         # Prompt the player to choose an action
         prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
@@ -304,7 +305,9 @@ class BotPlayer(Player):
         #TODO: update known_missing_cards
         return state
 
-    def _choose_action(self, tray, bird_deck):
+    def _choose_action(self, game_state: 'GameState') -> str:
+        tray = game_state.get_tray()
+        bird_deck = game_state.get_bird_deck()
         # enumerate the legal actions
         legal_actions = self._enumerate_legal_actions(tray=tray, bird_deck=bird_deck)
 
