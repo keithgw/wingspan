@@ -1,28 +1,69 @@
+from src.constants import CHOOSE_ACTION, CHOOSE_A_BIRD_TO_PLAY, CHOOSE_A_BIRD_TO_DRAW
+from src.entities.game_state import GameState
 from src.rl.mcts import Node
+from typing import List, FrozenSet, TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.entities.player import Player
 
 class State:
-    VALID_PHASES = ['choose_action', 'choose_a_bird_to_play', 'choose_a_bird_to_draw']
-    def __init__(self, game_board, bird_hand, food_supply, phase, tray, bird_deck, legal_actions):
-        if phase not in self.VALID_PHASES:
-            raise ValueError(f"Invalid phase {phase}, must be one of {self.VALID_PHASES}")
-        self.game_board = game_board
-        self.bird_hand = bird_hand
-        self.food_supply = food_supply
-        self.phase = phase
-        self.tray = tray
-        self.bird_deck = bird_deck
+    def __init__(self, game_state: GameState, legal_actions: List[str]) -> None:
+        self.game_state = game_state
         self.legal_actions = legal_actions
+
+    def represent_bird_deck(self) -> int:
+        """Returns a representation of the bird deck, that appropriately represents hidden information."""
+        return self.game_state.get_bird_deck().get_count()
+    
+    def represent_discard_pile(self) -> int:
+        """Returns a representation of the discard pile, that appropriately represents hidden information."""
+        return self.game_state.get_discard_pile().get_count()
+    
+    def represent_player(self, player: 'Player') -> FrozenSet[tuple]:
+        """Returns a representation of the player, that appropriately represents hidden information."""
+        #TODO: implement full and partial representations of player
+        # turns remaining unecessary, as game turn, current player, and ordering the opponents by next_player=0 is sufficient
+        pass 
+
+    def get_opponents(self, player: 'Player') -> List['Player']:
+        """Returns a list of the opponents of the player, ordered by next player."""
+        #TODO: implement get_opponents
+        pass
+        
+    def to_representation(self) -> FrozenSet[tuple]:
+        """Returns a representation of the game state."""
+        state_dict = {
+            'num_turns': self.game_state.get_num_turns(),
+            'game_turn': self.game_state.get_game_turn(),
+            'phase': self.game_state.get_phase(),
+            'bird_deck': self.represent_bird_deck(),
+            'discard_pile': self.represent_discard_pile(),
+            'tray': self.game_state.tray.to_representation(),
+            'bird_feeder': self.game_state.bird_feeder.to_representation(),
+            'current_player': self.game_state.get_current_player().to_representation_full(), #TODO: implement full and partial representations of player
+            'opponents': (self.represent_player(player) for player in self.get_opponents(self.game_state.get_current_player())), #TODO: implement get_opponents
+        }
+        return frozenset(state_dict.items())
+    
+    def from_representation(representation) -> GameState:
+        """Reconstructs the game state from a representation."""
+        state_dict = dict(representation)
+        bird_deck = BirdDeck.from_representation(state_dict['bird_deck'])
+        discard_pile = DiscardPile.from_representation(state_dict['discard_pile'])
+        tray = Tray.from_representation(state_dict['tray'])
+        bird_feeder = BirdFeeder.from_representation(state_dict['bird_feeder'])
+        players = [Player.from_representation(player_repr) for player_repr in state_dict['players']]
+        return GameState(state_dict['num_turns'], state_dict['num_players'], state_dict['game_turn'], state_dict['phase'], bird_deck, discard_pile, tray, bird_feeder, players)
 
 class Policy:
     def __call__(self, state):
-        if state.phase == 'choose_action':
+        if state.phase == CHOOSE_ACTION:
             return self._policy_choose_action(state.legal_actions)
-        elif state.phase == 'choose_a_bird_to_play':
-            return self._policy_choose_a_bird_to_play(state.bird_hand, state.food_supply)
-        else:
-            return self._policy_choose_a_bird_to_draw(state.tray, state.bird_deck)
+        elif state.phase == CHOOSE_A_BIRD_TO_PLAY:
+            return self._policy_choose_a_bird_to_play(state.game_state.get_bird_hand(), state.game_state.get_food_supply())
+        elif state.phase == CHOOSE_A_BIRD_TO_DRAW:
+            return self._policy_choose_a_bird_to_draw(state.game_state.get_tray(), state.game_state.get_bird_deck()) #TODO: this shouldn't need the deck, just a count
 
-    def _policy_choose_action(self, legal_actions):
+    def _policy_choose_action(self, legal_actions): #TODO: this shouldn't need legal_actions, they should be handled by querying the game_state
         # Return probabilities for the actions 'play_a_bird', 'gain_food', 'draw_a_card'
         raise NotImplementedError
 
@@ -30,7 +71,7 @@ class Policy:
         # Return probabilities for the actions 'play_bird_i' for i in hand
         raise NotImplementedError
 
-    def _policy_choose_a_bird_to_draw(self, tray, deck):
+    def _policy_choose_a_bird_to_draw(self, tray, deck): #TODO: this shouldn't need the deck, just a count of cards in the deck, or bool deck.get_count() > 0
         # Return probabilities for the actions 'choose_bird_i' for i in tray, 'choose_from_deck'
         raise NotImplementedError
 
