@@ -35,5 +35,8 @@ class TestFoodSupply(unittest.TestCase):
             self.food_supply.render()
             self.assertEqual(fake_out.getvalue().strip(), "Food supply: 3")
 
+    def test_to_representation(self):
+        self.assertEqual(self.food_supply.to_representation(), self.initial_amount)
+
 if __name__ == '__main__':
     unittest.main()

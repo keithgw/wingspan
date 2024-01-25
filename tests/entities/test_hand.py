@@ -101,5 +101,14 @@ class TestBirdHand(unittest.TestCase):
         self.hand.tuck_card(card_name)
         self.assertNotIn(card_name, self.hand.cards)
 
+    def test_to_representation(self):
+        for bird in self.birds:
+            self.hand.add_card(bird, bird.get_name())
+        expected_representation = frozenset([bird.to_representation() for bird in self.birds])
+        self.assertEqual(self.hand.to_representation(), expected_representation)
+
+    def test_to_representation_empty_hand(self):
+        self.assertEqual(self.hand.to_representation(), frozenset())
+
 if __name__ == '__main__':
     unittest.main()
