@@ -44,7 +44,7 @@ class Bird:
     
     def to_representation(self) -> Tuple[int, int]:
         """
-        Get the representation of the bird.
+        Get the representation of the bird for use in composing state representations.
 
         Returns:
             Tuple[int, int]: The representation of the bird as a tuple of (points, food_cost).

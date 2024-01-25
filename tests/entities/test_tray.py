@@ -117,6 +117,19 @@ class TestTray(unittest.TestCase):
             self.tray.render()
             self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
             mock_render.assert_called_once_with(bird_container=self.tray.see_birds_in_tray(), capacity=self.tray.capacity)
+
+    def test_to_representation_full_tray(self):
+        # Test when the tray is full
+        for bird in self.birds:
+            self.tray.add_bird(bird)
+        self.assertEqual(self.tray.to_representation(), frozenset([bird.to_representation() for bird in self.birds]))
+
+    def test_to_representation_partially_full_tray(self):
+        # Test when the tray is partially full
+        for bird in self.birds[:2]:
+            self.tray.add_bird(bird)
+        expected_representation = frozenset([bird.to_representation() for bird in self.birds[:2]] + [Bird("Placeholder", 0, 0).to_representation()])
+        self.assertEqual(self.tray.to_representation(), expected_representation)
             
 if __name__ == '__main__':
     unittest.main()
