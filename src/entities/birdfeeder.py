@@ -23,3 +23,6 @@ class BirdFeeder:
 
     def render(self):
         print("Bird Feeder: " + str(self.food_count))
+
+    def to_representation(self):
+        return self.food_count

@@ -41,5 +41,9 @@ class TestBirdFeeder(unittest.TestCase):
             self.bird_feeder.render()
             self.assertEqual(fake_out.getvalue().strip(), "Bird Feeder: 3")
 
+    def test_to_representation(self):
+        self.bird_feeder.food_count = 3
+        self.assertEqual(self.bird_feeder.to_representation(), 3)
+
 if __name__ == '__main__':
     unittest.main()
