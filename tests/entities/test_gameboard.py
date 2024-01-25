@@ -11,7 +11,7 @@ class TestGameBoard(unittest.TestCase):
 
     def test_check_if_full(self):
         self.assertFalse(self.gameboard.check_if_full())
-        for _ in range(5):
+        for _ in range(self.gameboard.capacity):
             self.gameboard.add_bird(self.mock_card)
         self.assertTrue(self.gameboard.check_if_full())
 
@@ -37,6 +37,21 @@ class TestGameBoard(unittest.TestCase):
         # check that get_score returns the sum of the scores of the birds on the game board
         self.gameboard.add_bird(self.mock_card)
         self.assertEqual(self.gameboard.get_score(), self.mock_card.get_points())
+
+    def test_to_representation_full_board(self):
+        # check that to_representation returns the representation of the game board
+        for _ in range(self.gameboard.capacity):
+            self.gameboard.add_bird(self.mock_card)
+        self.assertEqual(self.gameboard.to_representation(), frozenset([self.mock_card.to_representation()] * self.gameboard.capacity))
+
+    def test_to_representation_partially_full_board(self):
+        # check that to_representation returns the representation of the game board
+        for _ in range(self.gameboard.capacity - 1):
+            self.gameboard.add_bird(self.mock_card)
+
+        board_rep = [self.mock_card.to_representation()] * (self.gameboard.capacity - 1)
+        placeholder_rep = [Bird("Placeholder", 0, 0).to_representation()]
+        self.assertEqual(self.gameboard.to_representation(), frozenset(board_rep + placeholder_rep)) 
 
     if __name__ == '__main__':
         unittest.main()
