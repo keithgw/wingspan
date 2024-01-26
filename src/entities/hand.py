@@ -27,6 +27,10 @@ class Hand:
     def get_card_names_in_hand(self) -> List[str]:
         """Public method that returns card names in hand"""
         return list(self.cards.keys())
+    
+    def get_count(self) -> int:
+        """Get the number of cards in the hand"""
+        return len(self.cards)
 
     def remove_card(self, card_name: str) -> 'Bird':
         """Remove a card from the hand and return it"""
@@ -71,3 +75,19 @@ class BirdHand(Hand):
     def to_representation(self) -> FrozenSet[Tuple[int, int]]:
         """Return a representation of the hand for composing a representation of the game state."""
         return frozenset([card.to_representation() for card in self.get_cards_in_hand()])
+    
+    @classmethod
+    def from_representation(cls, representation: FrozenSet[Tuple[int, int]], bird_deck: 'Deck') -> 'BirdHand':
+        """
+        Return a BirdHand from a representation of the hand.
+        
+        Args:
+            representation (FrozenSet[Tuple[int, int]]): A representation of the hand.
+            bird_deck (Deck): The bird deck.
+        """
+        hand = cls()
+        for bird_representation in representation:
+            # draw the first bird that matches the representation from the bird deck
+            bird = bird_deck.remove_and_return_bird(lambda bird: bird.to_representation() == bird_representation)
+            hand.add_card(card=bird, card_name = bird.get_name())
+        return hand

@@ -27,6 +27,10 @@ class TestHand(unittest.TestCase):
         self.hand.add_card(self.test_card, self.test_card.get_name())
         self.assertEqual(self.hand.get_cards_in_hand(), [self.test_card])
 
+    def test_get_count(self):
+        self.hand.add_card(self.test_card, self.test_card.get_name())
+        self.assertEqual(self.hand.get_count(), 1)
+
     def test_get_card_names_in_hand(self):
         card_name = self.test_card.get_name()
         self.hand.add_card(self.test_card, card_name)
@@ -109,6 +113,14 @@ class TestBirdHand(unittest.TestCase):
 
     def test_to_representation_empty_hand(self):
         self.assertEqual(self.hand.to_representation(), frozenset())
+
+    def test_from_representation(self):
+        representation = frozenset([bird.to_representation() for bird in self.birds])
+        deck = Deck()
+        for bird in self.birds:
+            deck.add_card(bird)
+        hand = BirdHand.from_representation(representation, deck)
+        self.assertEqual(hand.to_representation(), representation)
 
 if __name__ == '__main__':
     unittest.main()
