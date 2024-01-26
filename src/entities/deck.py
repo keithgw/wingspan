@@ -1,9 +1,10 @@
-from src.entities.bird import Bird
-from typing import List
 import random
+from typing import List, Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.entities.bird import Bird
 
 class Deck:
-    def __init__(self, cards: List[Bird]=None):
+    def __init__(self, cards: List['Bird']=None):
         """
         Initializes a new instance of the Deck class.
 
@@ -23,8 +24,18 @@ class Deck:
             int: The number of cards in the deck.
         """
         return len(self.cards)
+    
+    def prepare_deck(self, cards: List['Bird']) -> None:
+        """
+        Prepares a new deck of cards by adding each card to the deck and shuffling.
 
-    def add_card(self, card: Bird) -> None:
+        Args:
+            cards (List[Bird]): The list of cards to be added to the deck.
+        """
+        self.cards.extend(cards)
+        self.shuffle()
+
+    def add_card(self, card: 'Bird') -> None:
         """
         Adds a card to the deck.
 
@@ -33,7 +44,25 @@ class Deck:
         """
         self.cards.append(card)
 
-    def draw_card(self) -> Bird:
+    def remove_and_return_bird(self, condition: Callable[['Bird'], bool]) -> 'Bird':
+        """
+        Removes and returns the first bird in the deck that meets the given condition.
+
+        Args:
+            condition (function): A function that takes a Bird as an argument and returns a boolean.
+
+        Returns:
+            Bird: The first bird in the deck that meets the condition.
+
+        Raises:
+            ValueError: If no bird in the deck meets the condition.
+        """
+        for i, bird in enumerate(self.cards):
+            if condition(bird):
+                return self.cards.pop(i)
+        raise ValueError('No bird in the deck meets the condition')
+
+    def draw_card(self) -> 'Bird':
         """
         Draws a card from the top of the deck.
 

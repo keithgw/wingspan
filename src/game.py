@@ -75,9 +75,7 @@ class WingspanGame:
 
         # Initialize the bird deck and discard pile
         bird_deck = Deck()
-        for bird in bird_list:
-            bird_deck.add_card(bird)
-        bird_deck.shuffle()
+        bird_deck.prepare_deck(cards=bird_list)
         discard_pile = Deck()
 
         # Initialize the players
