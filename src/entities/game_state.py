@@ -49,7 +49,7 @@ class GameState:
         """Returns the discard pile."""
         return self.discard_pile
     
-    def get_tray(self) -> Tray:
+    def get_tray(self) -> 'Tray':
         """Returns the bird tray."""
         return self.tray
     
