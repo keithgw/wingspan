@@ -92,3 +92,21 @@ class Tray:
 
         # Create the representation and return it
         return frozenset(bird.to_representation() for bird in birds_to_represent)
+    
+    @classmethod
+    def from_representation(cls, representation: FrozenSet[Tuple[int, int]], deck: 'Deck') -> 'Tray':
+        """Create a tray from a representation."""
+        # infer the tray capacity from the representation
+        capacity = len(representation)
+
+        # Create a tray with the inferred capacity
+        tray = cls(capacity=capacity)
+
+        # For each bird in the representation, draw a valid bird from the deck and add it to the tray
+        for bird_representation in representation:
+            # handle empty slots, which are represented by (0, 0)
+            if bird_representation != (0, 0):
+                bird = deck.remove_and_return_bird(lambda bird: bird.to_representation() == bird_representation)
+                tray.add_bird(bird)
+
+        return tray
