@@ -6,15 +6,16 @@ if TYPE_CHECKING:
     from src.entities.game_state import GameState
 
 class Player:
-    def __init__(self, name, bird_hand, food_supply, num_turns):
+    def __init__(self, name, bird_hand, food_supply, num_turns, game_board=None):
         self.name = name
         self.bird_hand = bird_hand
         self.food_supply = food_supply
         self.num_turns = num_turns
         self.turns_remaining = num_turns
-        self.game_board = GameBoard()
+        if game_board is None:
+            self.game_board = GameBoard()
         self.score = 0
-        self.actions = ["play_a_bird", "gain_food", "draw_a_bird"] # lay_eggs not implemented yet
+        self.actions = ["play_a_bird", "gain_food", "draw_a_bird"] # lay_eggs not implemented yet #TODO: get from constants.py
 
     def get_name(self):
         '''
