@@ -1,6 +1,6 @@
 class BirdFeeder:
-    def __init__(self):
-        self.food_count = 0
+    def __init__(self, food_count: int=0):
+        self.food_count = food_count
 
     class NotEmptyError(Exception):
         pass
