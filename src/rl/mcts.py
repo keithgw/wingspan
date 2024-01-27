@@ -107,7 +107,7 @@ class State:
         num_turns_remaining = self._get_turns_remaining(num_turns=num_turns, game_turn=game_turn, num_players=num_players)
         return BotPlayer(
             name=name,
-            hand=hand,
+            bird_hand=hand,
             food_supply=food_supply,
             game_board=game_board,
             num_turns=num_turns_remaining
@@ -124,7 +124,7 @@ class State:
             'tray': self.game_state.tray.to_representation(),
             'bird_feeder': self.game_state.bird_feeder.to_representation(),
             'current_player': self._represent_player(self.game_state.get_current_player(), full=True),
-            'opponents': (self._represent_player(player, full=False) for player in self.get_opponents(self.game_state.get_current_player()))
+            'opponents': tuple(self._represent_player(player, full=False) for player in self._get_opponents(self.game_state.get_current_player()))
         }
         return frozenset(state_dict.items())
     
@@ -178,8 +178,8 @@ class State:
         
         ## discard the correct number of cards from the deck and validate
         valid_discard_pile = Deck()
-        cards_to_discard = state_dict['discard_pile']
-        if cards_to_discard != valid_bird_deck.get_count() - state_dict['bird_deck']:
+        cards_to_discard =  valid_bird_deck.get_count() - state_dict['bird_deck']
+        if cards_to_discard != state_dict['discard_pile']:
             raise ValueError(f"Number of cards to discard: {cards_to_discard} does not match the representation of the discard pile: {state_dict['discard_pile']}")
         for _ in range(cards_to_discard):
             valid_discard_pile.add_card(valid_bird_deck.draw_card())
