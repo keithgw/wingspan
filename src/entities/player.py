@@ -1,6 +1,5 @@
 from src.entities.gameboard import GameBoard
-from src.rl.reinforcement_learning import State, RandomPolicy
-import numpy as np
+from src.rl.policy import State, RandomPolicy
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.entities.game_state import GameState

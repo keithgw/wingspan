@@ -1,10 +1,10 @@
 import unittest
 from unittest.mock import Mock
+from src.rl.mcts import State
 from src.entities.bird import Bird
 from src.entities.hand import BirdHand
 from src.entities.deck import Deck
 from src.entities.player import BotPlayer
-from src.rl.reinforcement_learning import State, RandomPolicy
 
 class TestState(unittest.TestCase):
     def setUp(self):
@@ -69,19 +69,19 @@ class TestState(unittest.TestCase):
         }
         deck = Deck()
         deck.add_card(Bird("bird", 1, 1))
-        self.game_turn = 1
-        self.num_turns = 10
-        self.num_players = 2
-        self.name = "test_player"
+        game_turn = 1
+        num_turns = 10
+        num_players = 2
+        name = "test_player"
 
         player = self.state._construct_player(
-            hand=self.hand,
-            representation=self.representation,
-            deck=self.deck,
-            game_turn=self.game_turn,
-            num_turns=self.num_turns,
-            num_players=self.num_players,
-            name=self.name
+            hand=hand,
+            representation=representation,
+            deck=deck,
+            game_turn=game_turn,
+            num_turns=num_turns,
+            num_players=num_players,
+            name=name
         )
         self.assertIsInstance(player, BotPlayer)
         self.assertEqual(player.name, self.name)
@@ -146,79 +146,6 @@ class TestState(unittest.TestCase):
         self.assertEqual(game_state.tray, 'tray')
         self.assertEqual(game_state.bird_feeder, 'bird_feeder')
         self.assertEqual(game_state.players, ['current_player', 'opponent1', 'opponent2'])
-
-class TestRandomPolicy(unittest.TestCase):
-    def setUp(self):
-        self.policy = RandomPolicy()
-
-    def test_policy_choose_action_three_actions(self):
-        legal_actions = ['play_a_bird', 'gain_food', 'draw_a_card']
-        probabilities = self.policy._policy_choose_action(legal_actions)
-        self.assertEqual(probabilities, [1/3, 1/3, 1/3])
-
-    def test_policy_choose_action_two_actions(self):
-        legal_actions = ['play_a_bird', 'gain_food']
-        probabilities = self.policy._policy_choose_action(legal_actions)
-        self.assertEqual(probabilities, [1/2, 1/2])
-
-    def test_policy_choose_a_bird_to_play(self):
-        mock_hand = Mock()
-        mock_hand.get_cards_in_hand.return_value = ['bird1', 'bird2', 'bird3']
-        mock_food_supply = Mock()
-        mock_food_supply.can_play_bird.side_effect = [True, False, True]
-        probabilities = self.policy._policy_choose_a_bird_to_play(mock_hand, mock_food_supply)
-        self.assertEqual(probabilities, [0.5, 0, 0.5])
-
-    def test_policy_choose_a_bird_to_draw_deck_empty(self):
-        mock_tray = Mock()
-        mock_tray.get_count.return_value = 3
-        mock_deck = Mock()
-        mock_deck.get_count.return_value = 0
-        probabilities = self.policy._policy_choose_a_bird_to_draw(mock_tray, mock_deck)
-        self.assertEqual(probabilities, [1/3, 1/3, 1/3, 0])
-
-    def test_policy_choose_a_bird_to_draw_deck_not_empty(self):
-        mock_tray = Mock()
-        mock_tray.get_count.return_value = 3
-        mock_deck = Mock()
-        mock_deck.get_count.return_value = 1
-        probabilities = self.policy._policy_choose_a_bird_to_draw(mock_tray, mock_deck)
-        self.assertEqual(probabilities, [1/4, 1/4, 1/4, 1/4])
-
-    def test_policy_choose_a_bird_to_draw_tray_partially_filled(self):
-        mock_tray = Mock()
-        mock_tray.get_count.return_value = 2
-        mock_deck = Mock()
-        mock_deck.get_count.return_value = 1
-        probabilities = self.policy._policy_choose_a_bird_to_draw(mock_tray, mock_deck)
-        self.assertEqual(probabilities, [1/3, 1/3, 1/3])
-
-    def test_call_choose_action(self):
-        mock_state = Mock()
-        mock_state.phase = 'choose_action'
-        mock_state.legal_actions = ['play_a_bird', 'gain_food', 'draw_a_card']
-        probabilities = self.policy(mock_state)
-        self.assertEqual(probabilities, [1/3, 1/3, 1/3])
-
-    def test_call_choose_a_bird_to_play(self):
-        mock_state = Mock()
-        mock_state.phase = 'choose_a_bird_to_play'
-        mock_state.bird_hand = Mock()
-        mock_state.bird_hand.get_cards_in_hand.return_value = ['bird1', 'bird2', 'bird3']
-        mock_state.food_supply = Mock()
-        mock_state.food_supply.can_play_bird.side_effect = [True, False, True]
-        probabilities = self.policy(mock_state)
-        self.assertEqual(probabilities, [0.5, 0, 0.5])
-
-    def test_call_choose_a_bird_to_draw(self):
-        mock_state = Mock()
-        mock_state.phase = 'choose_a_bird_to_draw'
-        mock_state.tray = Mock()
-        mock_state.tray.get_count.return_value = 3
-        mock_state.bird_deck = Mock()
-        mock_state.bird_deck.get_count.return_value = 1
-        probabilities = self.policy(mock_state)
-        self.assertEqual(probabilities, [1/4, 1/4, 1/4, 1/4])
 
 if __name__ == '__main__':
     unittest.main()
