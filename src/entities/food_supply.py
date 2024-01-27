@@ -58,6 +58,6 @@ class FoodSupply:
         Returns a representation of the FoodSupply object.
 
         Returns:
-            dict: A representation of the FoodSupply object.
+            int: A representation of the food amount.
         """
         return self.amount
