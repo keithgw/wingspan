@@ -60,18 +60,26 @@ class TestGameBoard(unittest.TestCase):
 
         # create a mock deck
         deck = Deck()
-        deck.add_bird(Bird("Bird 1", 1, 2))
-        deck.add_bird(Bird("Bird 2", 2, 2))
-        deck.add_bird(Bird("Bird 3", 3, 4))
+        birds = [
+            Bird("Bird 1", 1, 2),
+            Bird("Bird 2", 2, 2),
+            Bird("Bird 3", 3, 4)
+        ]
+        for bird in birds:
+            deck.add_card(bird)
 
         # call the method under test
         gameboard = GameBoard.from_representation(representation, deck)
 
-        # assert the gameboard state
+        # representation has 3 members, so capacity should be 3
         self.assertEqual(gameboard.capacity, 3)
+
+        # the first two members of representation should be on the game board, (0, 0) should not, as it represents an empty space
         self.assertEqual(len(gameboard.get_birds()), 2)
-        self.assertIn(Bird("Bird 1", 1, 2), gameboard.get_birds())
-        self.assertIn(Bird("Bird 3", 3, 4), gameboard.get_birds())
+
+        # birds 1 and 3 should be on the game board, as their representations match the first two members of representation
+        self.assertIn(birds[0], gameboard.get_birds())
+        self.assertIn(birds[2], gameboard.get_birds())
 
 if __name__ == '__main__':
     unittest.main()

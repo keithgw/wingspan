@@ -137,9 +137,9 @@ class TestTray(unittest.TestCase):
 
         # create a mock deck
         deck = Deck()
-        deck.add_bird(Bird("Bird 1", 1, 2))
-        deck.add_bird(Bird("Bird 2", 2, 2))
-        deck.add_bird(Bird("Bird 3", 3, 4))
+        deck.add_card(Bird("Bird 1", 1, 2))
+        deck.add_card(Bird("Bird 2", 2, 2))
+        deck.add_card(Bird("Bird 3", 3, 4))
 
         # call the method under test
         tray = Tray.from_representation(representation, deck)
