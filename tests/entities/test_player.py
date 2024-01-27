@@ -8,7 +8,7 @@ from src.entities.birdfeeder import BirdFeeder
 from src.entities.tray import Tray
 from src.entities.deck import Deck
 from src.entities.gameboard import GameBoard
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, call
 
 class TestPlayerBase(unittest.TestCase):
     def setUp(self):
@@ -87,16 +87,28 @@ class TestPlayer(TestPlayerBase):
         legal_actions = self.player._enumerate_legal_actions(empty_tray, empty_deck)
         self.assertNotIn('draw_a_bird', legal_actions)
 
-    @patch.object(Player, '_choose_action', return_value='play_a_bird')
-    def test_request_action(self, choose_action_mock):
-        player = Player(None, None, None, None)
-        action = player.request_action(None)
-        
-        # Check if choose_action was called once
-        choose_action_mock.assert_called_once()
+    @patch.object(Player, '_enumerate_legal_actions', return_value=['action1', 'action2'])
+    @patch.object(Player, '_choose_action', return_value='action1')
+    def test_request_action(self, mock_choose_action, mock_enumerate_legal_actions):
+        # Create mocks
+        mock_game_state = Mock(spec=GameState)
+        mock_tray = Mock()
+        mock_tray.get_count.return_value = 3
+        mock_bird_deck = Mock()
+        mock_bird_deck.get_count.return_value = 1
+        mock_game_state.get_tray.return_value = mock_tray
+        mock_game_state.get_bird_deck.return_value = mock_bird_deck
+        player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
-        # Check if the returned action is the same as the action returned by choose_action
-        self.assertEqual(action, 'play_a_bird')
+        # call request_action
+        action = player.request_action(game_state=mock_game_state)
+
+        # check that _enumerate_legal_actions and _choose_action were called with the correct arguments
+        mock_enumerate_legal_actions.assert_called_once_with(tray=mock_tray, bird_deck=mock_bird_deck)
+        mock_choose_action.assert_called_once_with(legal_actions=['action1', 'action2'], game_state=mock_game_state)
+
+        # assert that the action returned by request_action is the same as the action returned by _choose_action
+        self.assertEqual(action, 'action1')
 
     def test_take_action(self):
         # test that an error is raised if action is not valid
@@ -123,22 +135,37 @@ class TestPlayer(TestPlayerBase):
             self.player.take_action(action='draw_a_bird', game_state=mock_game_state)
             draw_bird_mock.assert_called_once()
 
-    def test_play_a_bird(self):
-        bird = self.birds[0]
-        bird_name = bird.get_name()
-        initial_food_supply = self.player.food_supply.amount
-        final_food_supply = initial_food_supply - bird.get_food_cost()
-        with patch.object(self.player, '_choose_a_bird_to_play', return_value=bird_name):
-            self.player.play_a_bird()
+    @patch.object(Player, '_enumerate_playable_birds', return_value=['bird1', 'bird2'])
+    @patch.object(Player, '_choose_a_bird_to_play', return_value='bird1')
+    def test_play_a_bird(self, mock_choose_a_bird_to_play, mock_enumerate_playable_birds):
+        # Create mocks
+        mock_game_state = Mock(spec=GameState)
+        mock_bird_card = Mock()
+        mock_bird_card.get_food_cost.return_value = 1
+        mock_bird_hand = Mock()
+        mock_bird_hand.get_card.return_value = mock_bird_card
+        mock_food_supply = Mock()
+        mock_game_board = Mock()
+        player = Player(
+            name=self.name, 
+            bird_hand=mock_bird_hand, 
+            food_supply=mock_food_supply, 
+            num_turns=self.num_turns, 
+            game_board=mock_game_board
+            )
+        
+        # call play_a_bird
+        player.play_a_bird(game_state=mock_game_state)
 
-        # Check if the bird was removed from the player's hand
-        self.assertNotIn(bird, self.player.bird_hand.get_cards_in_hand())
+        # check that _enumerate_playable_birds and _choose_a_bird_to_play were called with the correct arguments
+        mock_enumerate_playable_birds.assert_called_once()
+        mock_choose_a_bird_to_play.assert_called_once_with(playable_birds=['bird1', 'bird2'], game_state=mock_game_state)
 
-        # Check if the bird was added to the game board
-        self.assertIn(bird, self.player.game_board.get_birds())
+        # check that food cost was decremented
+        mock_food_supply.decrement.assert_called_once_with(1)
 
-        # Check if the player's food supply was decremented by the bird's food cost
-        self.assertEqual(self.player.food_supply.amount, final_food_supply)
+        # check that the bird was added to the game board
+        mock_bird_hand.play_bird.assert_called_once_with(bird_name='bird1', game_board=mock_game_board)
 
     def test_gain_food(self):
         bird_feeder = BirdFeeder()
@@ -151,25 +178,53 @@ class TestPlayer(TestPlayerBase):
         # Check that the food came from the bird feeder
         self.assertEqual(bird_feeder.food_count, 4)
 
-    @patch('builtins.input', return_value='deck')
-    def test_draw_a_bird(self, input):
-        with patch.object(self.player, '_choose_a_bird_to_draw', return_value='deck'):
-            # empty tray, empty deck
-            self.player.draw_a_bird(self.tray, self.bird_deck)
-            # Top card in deck should be in player's hand
-            self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
+    @patch.object(Player, '_choose_a_bird_to_draw', return_value='bird1')
+    def test_draw_a_bird_empty_deck(self, mock_choose_a_bird_to_draw):
+        # Create mocks
+        mock_game_state = Mock(spec=GameState)
+        mock_tray = Mock()
+        mock_tray.see_birds_in_tray.return_value = ['bird1', 'bird2']
+        mock_bird_deck = Mock()
+        mock_bird_deck.get_count.return_value = 0
+        mock_game_state.get_tray.return_value = mock_tray
+        mock_game_state.get_bird_deck.return_value = mock_bird_deck
+        mock_hand = Mock()
+        mock_hand.draw_bird_from_tray.return_value = None
+        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
-        # cards in tray, cards in deck
-        # put the card back in the deck, goes to the bottom)
-        anhinga = self.player.bird_hand.discard_card('Anhinga')
-        self.bird_deck.add_card(anhinga)
-        discard_pile = Deck()
-        # top 3 cards in deck should be in tray
-        self.tray.flush(discard_pile=discard_pile, bird_deck=self.bird_deck)
-        # this should return 'deck', and Anhinga is the only card left in the deck
-        with patch.object(self.player, '_choose_a_bird_to_draw', return_value='deck'):
-            self.player.draw_a_bird(self.tray, self.bird_deck)
-            self.assertIn('Anhinga', self.player.bird_hand.get_card_names_in_hand())
+        # call draw_a_bird
+        player.draw_a_bird(game_state=mock_game_state)
+
+        # check that _choose_a_bird_to_draw was called with the correct arguments
+        mock_choose_a_bird_to_draw.assert_called_once_with(valid_choices=['bird1', 'bird2'], game_state=mock_game_state)
+
+        # check that a bird was drawn from the tray
+        mock_hand.draw_bird_from_tray.assert_called_once_with(tray=mock_tray, bird_name='bird1')
+
+    @patch.object(Player, '_choose_a_bird_to_draw', return_value='deck')
+    def test_draw_a_bird_from_deck(self, mock_choose_a_bird_to_draw):
+        # Create mocks
+        mock_game_state = Mock(spec=GameState)
+        mock_tray = Mock()
+        mock_tray.see_birds_in_tray.return_value = ['bird1', 'bird2']
+        mock_bird_deck = Mock()
+        mock_bird_deck.get_count.return_value = 1
+        mock_game_state.get_tray.return_value = mock_tray
+        mock_game_state.get_bird_deck.return_value = mock_bird_deck
+        mock_hand = Mock()
+        mock_hand.draw_card_from_deck.return_value = None
+        mock_hand.get_card_names_in_hand.return_value = ['original_bird', 'new_bird']
+        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+
+        # call draw_a_bird
+        player.draw_a_bird(game_state=mock_game_state)
+
+        # check that _choose_a_bird_to_draw was called with the correct arguments
+        mock_choose_a_bird_to_draw.assert_called_once_with(valid_choices=['bird1', 'bird2', 'deck'], game_state=mock_game_state)
+
+        # check that a bird was drawn from the tray
+        mock_hand.draw_card_from_deck.assert_called_once_with(mock_bird_deck)
+
 
     def test_end_turn(self):
         # Check that the player's turn count is decremented by 1
@@ -189,135 +244,92 @@ class TestHumanPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
         self.player = HumanPlayer(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        self.mock_game_state = Mock(spec=GameState)
 
     @patch('builtins.input', return_value='1')
-    @patch.object(Player, '_enumerate_legal_actions', return_value=['play_a_bird', 'gain_food', 'draw_a_bird'])
-    def test__choose_action(self, input, enumerate_legal_actions_mock):
+    def test_choose_action(self, input):
         # An input of 1 should return 'play_a_bird'
-        mock_game_state = Mock()
-        action = self.player._choose_action(game_state=mock_game_state)
+        legal_actions = ['play_a_bird', 'gain_food', 'draw_a_bird']
+        action = self.player._choose_action(legal_actions=legal_actions, game_state=self.mock_game_state)
         self.assertEqual(action, 'play_a_bird')
 
-        # Check if _enumerate_legal_actions was called once
-        enumerate_legal_actions_mock.assert_called_once() 
-
     @patch('builtins.input', return_value='Osprey')
-    def test__choose_a_bird_to_play(self, input):
+    def test_choose_a_bird_to_play(self, input):
         # An input of 'Osprey' should return the Osprey bird, which should be playable, since its both in the hand and the player has sufficient food
         valid_bird = self.birds[0].get_name()
-        bird = self.player._choose_a_bird_to_play()
+        bird = self.player._choose_a_bird_to_play(playable_birds=[valid_bird], game_state=self.mock_game_state)
         self.assertEqual(bird, valid_bird)
 
     @patch('builtins.input', return_value='deck')
     def test__choose_a_bird_to_draw(self, input):
         # An input of 'deck' should return 'deck'
-        choice = self.player._choose_a_bird_to_draw(bird_deck=self.bird_deck, tray=self.tray)
+        choice = self.player._choose_a_bird_to_draw(valid_choices=['deck'], game_state=self.mock_game_state)
         self.assertEqual(choice, 'deck')
 
 class TestBotPlayer(TestPlayerBase):
-    def setUp(self):
-        super().setUp()
+    def test_choose_action(self):
+       # Create a mock policy that returns a fixed action
         mock_policy = Mock()
-        mock_policy.return_value = [0.1, 0.2, 0.7]
-        self.test_player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        mock_policy.return_value = 'mock_action'
 
-    @patch('numpy.random.choice')
-    def test__choose_action(self, mock_np_choice):
-        # Create a mock GameState object
-        mock_game_state = Mock()
-        mock_tray = Mock()
-        mock_tray.get_count.return_value = 3
-        mock_game_state.get_tray.return_value = mock_tray
+        # Create a player with the mock policy
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
-        mock_bird_deck = Mock()
-        mock_bird_deck.get_count.return_value = 3
-        mock_game_state.get_bird_deck.return_value = mock_bird_deck
+        # Create a mock game state
+        mock_game_state = Mock(spec=GameState)
 
-        # Mock numpy's random choice to return a predictable result
-        mock_np_choice.return_value = 2
+        # Call the method with a list of legal actions
+        legal_actions = ['action1', 'action2', 'mock_action']
+        result = player._choose_action(legal_actions, mock_game_state)
 
-        # Create a mock _enumerate_legal_actions method
-        mock_enumerate_legal_actions = Mock()
-        mock_enumerate_legal_actions.return_value = ['action1', 'action2', 'action3']
+        # Check that the policy was called with the correct arguments
+        mock_policy.assert_called_once_with(state=mock_game_state, actions=legal_actions)
 
-        # Set it as the _enumerate_legal_actions method of self.test_player
-        self.test_player._enumerate_legal_actions = mock_enumerate_legal_actions
+        # Check that the result is the action returned by the policy
+        self.assertEqual(result, 'mock_action')
 
-        # Create a mock _get_state method
-        mock_get_state = Mock()
-        mock_get_state.return_value = 'mock_state'
+    def test_choose_a_bird_to_play(self):
+       # Create a mock policy that returns a fixed bird
+        mock_policy = Mock()
+        mock_policy.return_value = 'mock_bird'
 
-        # Set it as the _get_state method of self.test_player
-        self.test_player._get_state = mock_get_state
+        # Create a player with the mock policy
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
 
-        # Call the method to test
-        action = self.test_player._choose_action(mock_game_state)
+        # Create a mock game state
+        mock_game_state = Mock(spec=GameState)
 
-        # Check if the methods were called correctly
-        mock_game_state.get_tray.assert_called_once()
-        mock_game_state.get_bird_deck.assert_called_once()
-        self.test_player._enumerate_legal_actions.assert_called_once_with(tray=mock_tray, bird_deck=mock_bird_deck)
-        self.test_player._get_state.assert_called_once_with(phase='choose_action', tray=mock_tray, bird_deck=mock_bird_deck, legal_actions=['action1', 'action2', 'action3'])
-        self.test_player.policy.assert_called_once_with('mock_state')
-        mock_np_choice.assert_called_once_with(len([0.1, 0.2, 0.7]), p=[0.1, 0.2, 0.7])
+        # Call the method with a list of playable birds
+        playable_birds = ['bird1', 'bird2', 'mock_bird']
+        result = player._choose_a_bird_to_play(playable_birds=playable_birds, game_state=mock_game_state)
 
-        # Check if the returned action is correct
-        self.assertEqual(action, 'action3')
+        # Check that the policy was called with the correct arguments
+        mock_policy.assert_called_once_with(state=mock_game_state, actions=playable_birds)
 
-    @patch('numpy.random.choice')
-    def test__choose_a_bird_to_play(self, mock_np_choice):
-        # Create mock methods
-        mock_get_state = Mock()
-        mock_get_state.return_value = 'mock_state'
-        mock_get_card_names_in_hand = Mock()
-        mock_get_card_names_in_hand.return_value = ['bird1', 'bird2', 'bird3']
+        # Check that the result is the action returned by the policy
+        self.assertEqual(result, 'mock_bird')
 
-        # Set them as the methods of self.test_player
-        self.test_player._get_state = mock_get_state
-        self.test_player.bird_hand.get_card_names_in_hand = mock_get_card_names_in_hand
+    def test__choose_a_bird_to_draw(self):
+         # Create a mock policy that returns a fixed bird
+          mock_policy = Mock()
+          mock_policy.return_value = 'mock_bird'
+    
+          # Create a player with the mock policy
+          player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+    
+          # Create a mock game state
+          mock_game_state = Mock(spec=GameState)
+    
+          # Call the method with a list of valid choices
+          valid_choices = ['bird1', 'bird2', 'mock_bird']
+          result = player._choose_a_bird_to_draw(valid_choices=valid_choices, game_state=mock_game_state)
+    
+          # Check that the policy was called with the correct arguments
+          mock_policy.assert_called_once_with(state=mock_game_state, actions=valid_choices)
+    
+          # Check that the result is the action returned by the policy
+          self.assertEqual(result, 'mock_bird')
 
-        # Mock numpy's random choice to return a predictable result
-        mock_np_choice.return_value = 1
-
-        # Call the method to test
-        chosen_bird = self.test_player._choose_a_bird_to_play()
-
-        # Check if the methods were called correctly
-        self.test_player._get_state.assert_called_once_with(phase='choose_a_bird_to_play')
-        self.test_player.bird_hand.get_card_names_in_hand.assert_called_once()
-        self.test_player.policy.assert_called_once_with('mock_state')
-        mock_np_choice.assert_called_once_with(len(['bird1', 'bird2', 'bird3']), p=[0.1, 0.2, 0.7])
-
-        # Check if the returned bird is correct
-        self.assertEqual(chosen_bird, 'bird2')
-
-    @patch('numpy.random.choice')
-    def test__choose_a_bird_to_draw(self, mock_np_choice):
-        # Create a mock tray and deck
-        mock_tray = Mock(spec=Tray)
-        mock_tray.see_birds_in_tray.return_value = ['bird1', 'bird2', 'bird3']
-        mock_deck = Mock(speck=Deck)
-        
-        # Create mock methods
-        mock_get_state = Mock()
-        mock_get_state.return_value = 'mock_state'
-
-        # Set them as the methods of self.test_player
-        self.test_player._get_state = mock_get_state
-
-        # Mock numpy's random choice to return a predictable result
-        mock_np_choice.return_value = 1
-
-        # Call the method to test
-        chosen_bird = self.test_player._choose_a_bird_to_draw(tray=mock_tray, bird_deck=mock_deck)
-
-        # Check if the methods were called correctly
-        self.test_player._get_state.assert_called_once_with(phase='choose_a_bird_to_draw', tray=mock_tray, bird_deck=mock_deck)
-        self.test_player.policy.assert_called_once_with('mock_state')
-        mock_np_choice.assert_called_once_with(len([0.1, 0.2, 0.7]), p=[0.1, 0.2, 0.7])
-
-        # Check if the returned bird is correct
-        self.assertEqual(chosen_bird, 'bird2')
         
 if __name__ == '__main__':
     unittest.main()
