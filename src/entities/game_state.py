@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from src.entities.birdfeeder import BirdFeeder
 
 class GameState:
-    def __init__(self, num_turns: int, bird_deck: 'Deck', discard_pile: 'Deck', tray: 'Tray', bird_feeder: 'BirdFeeder', players: List['Player']):
+    def __init__(self, num_turns: int, bird_deck: 'Deck', discard_pile: 'Deck', tray: 'Tray', bird_feeder: 'BirdFeeder', players: List['Player'], game_turn: int=0, phase: str=VALID_PHASES[0]):
         """
         Initialize a new game state with the minimum required elements to create a valid game state.
 
@@ -19,10 +19,18 @@ class GameState:
             bird_feeder (BirdFeeder): The bird feeder, containing 5 dice which the player can reroll when empty.
             players (List[Player]): The list of players in the game, indexed by initial turn order. Each player maintains their own hand, game board, and food supply.
         """
+        # Validate inputs and assign to attributes
+        if num_turns < 0:
+            raise ValueError("num_turns must be non-negative.")
         self.num_turns = num_turns
         self.num_players = len(players)
-        self.game_turn = 0 # increments by 1 each player turn, so will end at num_players * num_turns #TODO: add to init
-        self.phase = self.VALID_PHASES[0] # phases are intra-turn, so reset to 0 at the start of each player turn #TODO: add to init and validate
+
+        if game_turn > num_turns * self.num_players: # increments by 1 each player turn, so will end at num_players * num_turns
+            raise ValueError("game_turn must be less than or equal to num_turns * num_players.")
+        self.game_turn = game_turn 
+        if phase not in VALID_PHASES:
+            raise ValueError(f"phase must be one of {VALID_PHASES}.")
+        self.phase = phase
         self.bird_deck = bird_deck
         self.discard_pile = discard_pile
         self.tray = tray
@@ -90,7 +98,7 @@ class GameState:
         # manage turn accounting
         player.end_turn()
         self.game_turn += 1
-        self.phase = self.VALID_PHASES[0]
+        self.phase = VALID_PHASES[0]
 
     def is_game_over(self) -> bool:
         """Returns True if the game is over, False otherwise."""
