@@ -18,7 +18,7 @@ class Tray:
         return [bird for bird in self.birds.values()]
 
     def see_birds_in_tray(self) -> List[str]:
-        """Public method that returns a list of birds in the tray."""
+        """Public method that returns a list of bird names in the tray."""
         return [bird for bird in self.birds.keys()]
 
     def draw_bird(self, common_name: str) -> Bird:
