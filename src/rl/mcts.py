@@ -8,7 +8,6 @@ class Node():
         self.children = []
         self.num_visits = 0
         self.total_reward = 0
-        self.untried_actions = state.get_legal_actions()
     
     def is_fully_expanded(self):
         return len(self.untried_actions) == 0

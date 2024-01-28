@@ -1,6 +1,6 @@
 class BirdFeeder:
-    def __init__(self):
-        self.food_count = 0
+    def __init__(self, food_count: int=0):
+        self.food_count = food_count
 
     class NotEmptyError(Exception):
         pass
@@ -23,3 +23,6 @@ class BirdFeeder:
 
     def render(self):
         print("Bird Feeder: " + str(self.food_count))
+
+    def to_representation(self):
+        return self.food_count

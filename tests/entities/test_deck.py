@@ -11,6 +11,18 @@ class TestDeck(unittest.TestCase):
         self.deck.add_card(self.birds[0])
         self.assertEqual(self.deck.cards, [self.birds[0]])
 
+    def test_remove_and_return_bird(self):
+        for bird in self.birds:
+            self.deck.add_card(bird)
+        bird = self.deck.remove_and_return_bird(lambda bird: bird.get_name() == "Osprey")
+        self.assertEqual(bird.get_name(), self.birds[0].get_name())
+
+    def test_remove_and_return_bird_with_no_matching_bird(self):
+        for bird in self.birds:
+            self.deck.add_card(bird)
+        with self.assertRaises(ValueError):
+            self.deck.remove_and_return_bird(lambda bird: bird.get_name() == "Golden Eagle")
+
     def test_draw_card(self):
         print(self.deck.get_count())
         for bird in self.birds:
@@ -23,12 +35,12 @@ class TestDeck(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.deck.draw_card()
 
-    def test_shuffle_deck(self):
+    def test_shuffle(self):
         # Create a large, but simple deck to make failure due to shuffling returning the same exact deck unlikely.
         for letter in "abcdefghijkl":
             self.deck.add_card(letter)
         original_deck = self.deck.cards.copy()
-        self.deck.shuffle_deck()
+        self.deck.shuffle()
         # Check that the deck has the same cards after shuffling
         self.assertEqual(set(self.deck.cards), set(original_deck))
         # Check that the order of cards has changed (most of the time)

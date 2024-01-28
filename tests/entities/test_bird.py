@@ -20,6 +20,10 @@ class TestBird(unittest.TestCase):
         bird = Bird('Osprey', 5, 2)
         self.assertEqual(bird.get_food_cost(), 2)
 
+    def test_to_representation(self):
+        bird = Bird('Osprey', 5, 2)
+        self.assertEqual(bird.to_representation(), (5, 2))
+
     def test_activate(self):
         bird = Bird('Osprey', 5, 2)
         # Add test for activation behavior here
