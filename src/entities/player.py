@@ -1,5 +1,5 @@
+from src.constants import CHOOSE_A_BIRD_TO_PLAY, CHOOSE_A_BIRD_TO_DRAW
 from src.entities.gameboard import GameBoard
-from src.rl.policy import RandomPolicy
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from src.entities.game_state import GameState
@@ -309,22 +309,27 @@ class HumanPlayer(Player):
         return chosen_bird
 
 class BotPlayer(Player):
-    def __init__(self, policy=None, *args, **kwargs):
+    def __init__(self, policy, *args, **kwargs):
         super().__init__(*args, **kwargs)
         '''
         Args:
             policy (Policy): The policy to use for the bot. If None, a random policy will be used.
         '''
-        if policy is None:
-            self.policy = RandomPolicy()
-        else:
-            self.policy = policy  # Load learned policy here
+        self.policy = policy  # Load learned policy here
 
         #TODO: add known missing cards
 
     def _choose_action(self, legal_actions: List[str], game_state: 'GameState') -> str:
         # Use the policy to choose an action according to the probabilities
-        return self.policy(state=game_state, actions=legal_actions)
+        action = self.policy(state=game_state, actions=legal_actions)
+
+        # Update the phase of the game state, if more choices are required to complete the player's turn
+        if action == self.actions[0]:
+            game_state.set_phase(CHOOSE_A_BIRD_TO_PLAY)
+        elif action == self.actions[2]:
+            game_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
+
+        return action
 
     def _choose_a_bird_to_play(self, playable_birds: List[str], game_state: 'GameState') -> str:
         # Use the policy to choose a bird according to the probabilities

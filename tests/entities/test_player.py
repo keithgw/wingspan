@@ -1,4 +1,5 @@
 import unittest
+from src.constants import CHOOSE_A_BIRD_TO_PLAY, CHOOSE_A_BIRD_TO_DRAW
 from src.entities.hand import BirdHand
 from src.entities.bird import Bird
 from src.entities.food_supply import FoodSupply
@@ -287,6 +288,42 @@ class TestBotPlayer(TestPlayerBase):
 
         # Check that the result is the action returned by the policy
         self.assertEqual(result, 'mock_action')
+
+    def choose_action_updates_phase(self):
+        # Create a mock policy that returns a fixed action
+        mock_policy = Mock()
+        mock_policy.return_value = "play_a_bird"
+
+        # Create a player with the mock policy
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+
+        # Create a mock game state
+        mock_game_state = Mock(spec=GameState)
+        def set_phase(new_phase):
+            mock_game_state.phase = new_phase
+        mock_game_state.set_phase.side_effect = set_phase
+
+        # Call the method with a list of legal actions
+        legal_actions = ["play_a_bird", "gain_food", "draw_a_bird"]
+        result = player._choose_action(legal_actions, mock_game_state)
+
+        # Check that the phase of the game state was updated
+        self.assertEqual(result, "play_a_bird")
+        self.assertEqual(mock_game_state.phase, CHOOSE_A_BIRD_TO_PLAY)
+        mock_game_state.set_phase.assert_called_once_with(CHOOSE_A_BIRD_TO_PLAY)
+
+        # now with draw a bird
+        mock_policy.return_value = "draw_a_bird"
+        result = player._choose_action(legal_actions, mock_game_state)
+        self.assertEqual(result, "draw_a_bird")
+        self.assertEqual(mock_game_state.phase, CHOOSE_A_BIRD_TO_DRAW)
+        mock_game_state.set_phase.assert_called_with(CHOOSE_A_BIRD_TO_DRAW)
+
+        # now with gain food, no change should be made
+        mock_policy.return_value = "gain_food"
+        result = player._choose_action(legal_actions, mock_game_state)
+        self.assertEqual(result, "gain_food")
+        self.assertEqual(mock_game_state.phase, CHOOSE_A_BIRD_TO_DRAW) # phase is unchanged
 
     def test_choose_a_bird_to_play(self):
        # Create a mock policy that returns a fixed bird
