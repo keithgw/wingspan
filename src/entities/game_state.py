@@ -3,13 +3,12 @@ from data.bird_list import birds as bird_list
 from src.entities.hand import BirdHand
 from src.entities.food_supply import FoodSupply
 from src.entities.gameboard import GameBoard
-from src.entities.player import BotPlayer
 from src.entities.tray import Tray
 from src.entities.deck import Deck
 from src.entities.birdfeeder import BirdFeeder
 from typing import List, FrozenSet, TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.entities.player import Player
+    from src.entities.player import Player, BotPlayer
 
 class GameState:
     def __init__(self, num_turns: int, bird_deck: Deck, discard_pile: Deck, tray: Tray, bird_feeder: BirdFeeder, players: List['Player'], game_turn: int=0, phase: str=VALID_PHASES[0]):
@@ -53,6 +52,12 @@ class GameState:
     def get_phase(self) -> str:
         """Returns the current phase."""
         return self.phase
+    
+    def set_phase(self, phase: str) -> None:
+        """Sets the current phase."""
+        if phase not in VALID_PHASES:
+            raise ValueError(f"phase must be one of {VALID_PHASES}, received {phase}.")
+        self.phase = phase
     
     def get_bird_deck(self) -> Deck:
         """Returns the bird deck."""
@@ -197,19 +202,22 @@ class MCTSGameState(GameState):
         """
         return num_turns - (game_turn // num_players)
     
-    def _construct_player(self, hand: BirdHand, representation: dict, deck: Deck, game_turn: int, num_turns: int, num_players: int, name: str) -> BotPlayer:
+    def _construct_player(self, hand: BirdHand, representation: dict, deck: Deck, game_turn: int, num_turns: int, num_players: int, name: str) -> 'BotPlayer':
         """Constructs a player from a representation."""
+        # import here to avoid circular imports
+        from src.utilities.player_factory import create_bot_player
 
         food_supply = FoodSupply(initial_amount=representation['food_supply'])
         game_board = GameBoard.from_representation(representation['game_board'], deck)
         num_turns_remaining = self._get_turns_remaining(num_turns=num_turns, game_turn=game_turn, num_players=num_players)
-        return BotPlayer(
+        bot_player = create_bot_player(
             name=name,
             bird_hand=hand,
             food_supply=food_supply,
             game_board=game_board,
             num_turns=num_turns_remaining
         )
+        return bot_player
 
     def to_representation(self) -> FrozenSet[tuple]:
         """Returns a representation of the game state."""

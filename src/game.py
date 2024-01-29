@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.entities.player import Player
 from src.entities.game_state import GameState
 from src.entities.birdfeeder import BirdFeeder
 from src.entities.deck import Deck
@@ -6,7 +8,6 @@ from data.bird_list import birds as bird_list
 from src.entities.hand import BirdHand
 from src.entities.tray import Tray
 from src.entities.food_supply import FoodSupply
-from src.entities.player import Player, HumanPlayer, BotPlayer
 from argparse import ArgumentParser
 
 # Constants #TODO: move to a config file
@@ -59,6 +60,9 @@ class WingspanGame:
         Returns:
             GameState: The initialized game state.
         """
+        # Import here to avoid circular imports
+        from src.utilities.player_factory import create_human_player, create_bot_player
+        
         # Validate inputs
         if num_human > num_players:
             raise ValueError("Number of human players cannot exceed total number of players.")
@@ -98,10 +102,10 @@ class WingspanGame:
             # create player
             if turn_order[player] == 'human':
                 player_name = input(f"What is Player {player + 1}'s name? ")
-                players[player] = HumanPlayer(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+                players[player] = create_human_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
             else:
                 player_name = f"Bot {player + 1}"
-                players[player] = BotPlayer(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+                players[player] = create_bot_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
 
         # Initialize the bird tray
         tray = Tray()
@@ -130,7 +134,7 @@ class WingspanGame:
             """
             self.game_state = game_state
 
-    def take_turn(self, player: Player) -> None:
+    def take_turn(self, player: 'Player') -> None:
         """
         Logic for a single player's turn. This will have the player choose an action, take the action, and end the turn.
         The game state will be updated as a side effect of the player taking an action and explicitly at the end of the turn.
@@ -141,13 +145,16 @@ class WingspanGame:
         # Choose an action
         chosen_action = player.request_action(game_state=self.game_state)
 
+        # Update the game phase based on the chosen action
+        self.game_state.update_game_phase(action=chosen_action)
+
         # Player takes the action, which will update the feeder, tray, deck, player's game board, player's hand, and player's food supply
         player.take_action(action=chosen_action, game_state=self.game_state)
 
         # End the turn, this refills the tray if necessary, increments the turn counter, and calls player.end_turn()
         self.game_state.end_player_turn(player=player)
 
-    def render(self, current_player: Player) -> None:
+    def render(self, current_player: 'Player') -> None:
         """
         Renders the current game state.
         
@@ -175,11 +182,11 @@ class WingspanGame:
 
         #TODO: render a representation of the opponent boards, hands, and food supplies
 
-    def get_player_scores(self) -> list:
+    def get_player_scores(self) -> list: #TODO: move to GameState
         """Returns a list of player scores indexed by initial turn order"""
         return [player.get_score() for player in self.game_state.get_players()]
     
-    def determine_winners(self) -> list:
+    def determine_winners(self) -> list: #TODO: move to GameState
         """Returns a list of player indices that are tied for the highest score"""
         # Determine the winner of the game
         scores = self.get_player_scores()
@@ -188,8 +195,8 @@ class WingspanGame:
 
     def render_game_summary(self) -> None:
         """Prints the final scores and the winner(s)"""
-        scores = self.get_player_scores()
-        winner_idx = self.determine_winners() # list of player indices that are tied for the highest score
+        scores = self.get_player_scores() #TODO: get from GameState
+        winner_idx = self.determine_winners() # list of player indices that are tied for the highest score #TODO: Get from GameState
 
         # check for tie
         num_winners = len(winner_idx)

@@ -1,5 +1,5 @@
 import unittest
-from src.constants import CHOOSE_ACTION
+from src.constants import CHOOSE_ACTION, CHOOSE_A_BIRD_TO_DRAW
 from src.entities.game_state import GameState, MCTSGameState
 from src.entities.hand import BirdHand
 from src.entities.deck import Deck
@@ -15,6 +15,17 @@ class TestGameState(unittest.TestCase):
 
     def test_get_num_turns(self):
         self.assertEqual(self.game_state.get_num_turns(), self.num_turns)
+
+    def test_get_phase(self):
+        self.assertEqual(self.game_state.get_phase(), CHOOSE_ACTION)
+
+    def test_set_phase_valid(self):
+        self.game_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
+        self.assertEqual(self.game_state.get_phase(), CHOOSE_A_BIRD_TO_DRAW)
+
+    def test_set_phase_invalid(self):
+        with self.assertRaises(ValueError):
+            self.game_state.set_phase('invalid_phase')
 
     def test_get_current_player_start(self):
         self.assertEqual(self.game_state.get_current_player(), self.players[0])
