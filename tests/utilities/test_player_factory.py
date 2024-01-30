@@ -6,7 +6,7 @@ from src.utilities.player_factory import create_bot_player, create_human_player
 
 class TestPlayerFactory(unittest.TestCase):
     def setUp(self):
-        self.kwargs = {"name": "Test Player", "bird_hand": Mock(), "food_supply": Mock(), "num_turns": 10}
+        self.kwargs = {"name": "Test Player", "bird_hand": Mock(), "food_supply": Mock(), "num_turns_remaining": 10}
 
     def test_create_bot_player_without_policy(self):
         # Act

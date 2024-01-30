@@ -102,10 +102,10 @@ class WingspanGame:
             # create player
             if turn_order[player] == 'human':
                 player_name = input(f"What is Player {player + 1}'s name? ")
-                players[player] = create_human_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+                players[player] = create_human_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns_remaining=num_turns)
             else:
                 player_name = f"Bot {player + 1}"
-                players[player] = create_bot_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns=num_turns)
+                players[player] = create_bot_player(name=player_name, bird_hand=hand, food_supply=food_supply, num_turns_remaining=num_turns)
 
         # Initialize the bird tray
         tray = Tray()
@@ -144,9 +144,6 @@ class WingspanGame:
         """
         # Choose an action
         chosen_action = player.request_action(game_state=self.game_state)
-
-        # Update the game phase based on the chosen action
-        self.game_state.update_game_phase(action=chosen_action)
 
         # Player takes the action, which will update the feeder, tray, deck, player's game board, player's hand, and player's food supply
         player.take_action(action=chosen_action, game_state=self.game_state)

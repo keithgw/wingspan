@@ -14,7 +14,7 @@ from unittest.mock import patch, Mock, call
 class TestPlayerBase(unittest.TestCase):
     def setUp(self):
             self.name = "Test Player"
-            self.num_turns = 5
+            self.num_turns_remaining = 5
             self.bird_hand = BirdHand()
             self.birds = [Bird('Osprey', 5, 1), Bird('Bald Eagle', 9, 3), Bird('Peregrine Falcon', 5, 2)]
             for bird in self.birds:
@@ -26,7 +26,7 @@ class TestPlayerBase(unittest.TestCase):
 class TestPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
-        self.player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        self.player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
     def test_get_name(self):
         name = self.player.get_name()
@@ -99,7 +99,7 @@ class TestPlayer(TestPlayerBase):
         mock_bird_deck.get_count.return_value = 1
         mock_game_state.get_tray.return_value = mock_tray
         mock_game_state.get_bird_deck.return_value = mock_bird_deck
-        player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = Player(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # call request_action
         action = player.request_action(game_state=mock_game_state)
@@ -151,7 +151,7 @@ class TestPlayer(TestPlayerBase):
             name=self.name, 
             bird_hand=mock_bird_hand, 
             food_supply=mock_food_supply, 
-            num_turns=self.num_turns, 
+            num_turns_remaining=self.num_turns_remaining, 
             game_board=mock_game_board
             )
         
@@ -191,7 +191,7 @@ class TestPlayer(TestPlayerBase):
         mock_game_state.get_bird_deck.return_value = mock_bird_deck
         mock_hand = Mock()
         mock_hand.draw_bird_from_tray.return_value = None
-        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # call draw_a_bird
         player.draw_a_bird(game_state=mock_game_state)
@@ -215,7 +215,7 @@ class TestPlayer(TestPlayerBase):
         mock_hand = Mock()
         mock_hand.draw_card_from_deck.return_value = None
         mock_hand.get_card_names_in_hand.return_value = ['original_bird', 'new_bird']
-        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = Player(name=self.name, bird_hand=mock_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # call draw_a_bird
         player.draw_a_bird(game_state=mock_game_state)
@@ -244,7 +244,7 @@ class TestPlayer(TestPlayerBase):
 class TestHumanPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
-        self.player = HumanPlayer(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        self.player = HumanPlayer(name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
         self.mock_game_state = Mock(spec=GameState)
 
     @patch('builtins.input', return_value='1')
@@ -274,7 +274,7 @@ class TestBotPlayer(TestPlayerBase):
         mock_policy.return_value = 'mock_action'
 
         # Create a player with the mock policy
-        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # Create a mock game state
         mock_game_state = Mock(spec=GameState)
@@ -295,7 +295,7 @@ class TestBotPlayer(TestPlayerBase):
         mock_policy.return_value = "play_a_bird"
 
         # Create a player with the mock policy
-        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # Create a mock game state
         mock_game_state = Mock(spec=GameState)
@@ -331,7 +331,7 @@ class TestBotPlayer(TestPlayerBase):
         mock_policy.return_value = 'mock_bird'
 
         # Create a player with the mock policy
-        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+        player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
 
         # Create a mock game state
         mock_game_state = Mock(spec=GameState)
@@ -352,7 +352,7 @@ class TestBotPlayer(TestPlayerBase):
           mock_policy.return_value = 'mock_bird'
     
           # Create a player with the mock policy
-          player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns=self.num_turns)
+          player = BotPlayer(policy=mock_policy, name=self.name, bird_hand=self.bird_hand, food_supply=self.food_supply, num_turns_remaining=self.num_turns_remaining)
     
           # Create a mock game state
           mock_game_state = Mock(spec=GameState)

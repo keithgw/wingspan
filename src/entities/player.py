@@ -8,12 +8,11 @@ if TYPE_CHECKING:
     from src.entities.birdfeeder import BirdFeeder
 
 class Player:
-    def __init__(self, name, bird_hand, food_supply, num_turns, game_board=None):
+    def __init__(self, name, bird_hand, food_supply, num_turns_remaining, game_board=None):
         self.name = name
         self.bird_hand = bird_hand
         self.food_supply = food_supply
-        self.num_turns = num_turns
-        self.turns_remaining = num_turns
+        self.turns_remaining = num_turns_remaining
         if game_board is None:
             self.game_board = GameBoard()
         else:

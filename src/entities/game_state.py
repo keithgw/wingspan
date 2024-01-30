@@ -215,7 +215,7 @@ class MCTSGameState(GameState):
             bird_hand=hand,
             food_supply=food_supply,
             game_board=game_board,
-            num_turns=num_turns_remaining
+            num_turns_remaining=num_turns_remaining
         )
         return bot_player
 
