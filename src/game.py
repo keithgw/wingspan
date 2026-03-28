@@ -112,23 +112,51 @@ class WingspanGame:
         chosen_action = player.request_action(game_state=self.game_state)
         player.take_action(action=chosen_action, game_state=self.game_state)
         self.game_state.end_player_turn(player=player)
+        return chosen_action
+
+    def _round_number(self):
+        return self.game_state.game_turn // self.game_state.num_players + 1
 
     def render(self, current_player):
-        self.game_state.get_bird_feeder().render()
-        print("Tray: ")
-        self.game_state.get_tray().render()
-        print("It is " + current_player.get_name() + "'s turn.")
-        player_turns_remaining = current_player.get_turns_remaining()
-        if player_turns_remaining == 1:
-            print("1 turn remaining.")
-        else:
-            print(str(player_turns_remaining) + " turns remaining.")
-        print(current_player.get_name() + "'s board: ")
-        current_player.get_game_board().render()
-        print(current_player.get_name() + "'s food supply: ")
-        current_player.get_food_supply().render()
-        print(current_player.get_name() + "'s hand: ")
-        current_player.get_bird_hand().render()
+        from src.utilities.utils import clear_screen, render_bird_container, render_header
+
+        clear_screen()
+
+        name = current_player.get_name()
+        turns_left = current_player.get_turns_remaining()
+        round_num = self._round_number()
+
+        turns_word = "turn" if turns_left == 1 else "turns"
+        print(f"\n  WINGSPAN  ·  Round {round_num}  ·  {name}'s turn  ·  {turns_left} {turns_word} left\n")
+
+        print(render_header("Bird Feeder"))
+        print(f"  Food available: {self.game_state.get_bird_feeder().food_count}\n")
+
+        print(render_header("Tray"))
+        print(
+            render_bird_container(
+                self.game_state.get_tray().get_birds_in_tray(),
+                capacity=self.game_state.get_tray().capacity,
+            )
+        )
+
+        print(render_header(f"{name}'s Board"))
+        board = current_player.get_game_board()
+        print(render_bird_container(board.get_birds(), capacity=board.capacity))
+
+        print(render_header(f"{name}'s Hand"))
+        print(render_bird_container(current_player.get_bird_hand().get_cards_in_hand()))
+
+        food = current_player.get_food_supply().amount
+        score = current_player.get_score()
+        print(f"  Food: {food}  ·  Score: {score}\n")
+
+    def render_bot_action(self, bot, action):
+        from src.utilities.utils import render_divider
+
+        action_display = action.replace("_", " ")
+        print(f"  {bot.get_name()} chose to {action_display}.")
+        print(render_divider("·"))
 
     def get_player_scores(self):
         return [player.get_score() for player in self.game_state.get_players()]
@@ -139,27 +167,42 @@ class WingspanGame:
         return [player_idx for player_idx, score in enumerate(scores) if score == max(scores)]
 
     def render_game_summary(self):
-        """Prints the final scores and the winner(s)"""
+        from src.utilities.utils import clear_screen, render_bird_container, render_header
+
+        clear_screen()
         scores = self.get_player_scores()
         winner_idx = self.determine_winners()
+
+        print(f"\n{'=' * 40}")
+        print("  GAME OVER")
+        print(f"{'=' * 40}\n")
 
         num_winners = len(winner_idx)
         if num_winners > 1:
             names = ", ".join([self.game_state.get_player(idx).get_name() for idx in winner_idx])
-            print(f"It's a {num_winners}-way tie between {names}")
+            print(f"  It's a {num_winners}-way tie between {names}!\n")
         else:
-            print(self.game_state.get_player(winner_idx[0]).get_name() + " wins!")
+            print(f"  {self.game_state.get_player(winner_idx[0]).get_name()} wins!\n")
 
-        print("Final scores:")
         for player_idx, score in enumerate(scores):
-            print(self.game_state.get_player(player_idx).get_name() + ": " + str(score))
-            self.game_state.get_player(player_idx).get_game_board().render()
+            player = self.game_state.get_player(player_idx)
+            print(render_header(f"{player.get_name()} — {score} points"))
+            print(render_bird_container(player.get_game_board().get_birds()))
 
     def play(self):
+        from src.entities.player import HumanPlayer
+
         while not self.game_state.is_game_over():
             current_player = self.game_state.get_current_player()
-            self.render(current_player)
-            self.take_turn(current_player)
+            is_human = isinstance(current_player, HumanPlayer)
+
+            if is_human:
+                self.render(current_player)
+
+            action = self.take_turn(current_player)
+
+            if not is_human and any(isinstance(p, HumanPlayer) for p in self.game_state.get_players()):
+                self.render_bot_action(current_player, action)
 
         self.render_game_summary()
 

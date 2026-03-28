@@ -122,43 +122,53 @@ class HumanPlayer(Player):
     def _choose_action(self, legal_actions, game_state):
         actions_map = {"1": self.actions[0], "2": self.actions[1], "3": self.actions[2]}
 
-        prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
+        options = []
+        if "play_a_bird" in legal_actions:
+            options.append("[1] Play a bird")
+        if "gain_food" in legal_actions:
+            options.append("[2] Gain food")
+        if "draw_a_bird" in legal_actions:
+            options.append("[3] Draw a bird")
+
+        prompt = "  " + "  ".join(options) + "\n  > "
         chosen_action = input(prompt).strip()
 
         while chosen_action not in actions_map or actions_map[chosen_action] not in legal_actions:
             if chosen_action not in actions_map:
-                print(f"Invalid input '{chosen_action}'. {prompt}")
+                print(f"  Invalid input '{chosen_action}'.")
             else:
-                print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
-            chosen_action = input(prompt).strip()
+                print(f"  You can't {actions_map[chosen_action].replace('_', ' ')} right now.")
+            chosen_action = input("  > ").strip()
 
         return actions_map[chosen_action]
 
     def _choose_a_bird_to_play(self, playable_birds, game_state):
-        prompt = "Choose a bird to play: " + "\n" + "\n".join(playable_birds) + "\n"
-        chosen_bird = input(prompt)
+        print("  Choose a bird to play:")
+        for bird in playable_birds:
+            print(f"    {bird}")
+        chosen_bird = input("  > ").strip()
         while chosen_bird not in playable_birds:
-            print(f"{chosen_bird} is not a valid bird. {prompt}")
-            chosen_bird = input(prompt)
+            print(f"  '{chosen_bird}' is not a valid choice.")
+            chosen_bird = input("  > ").strip()
         return chosen_bird
 
     def _choose_a_bird_to_draw(self, valid_choices, game_state):
         birds_in_tray = [bird for bird in valid_choices if bird != "deck"]
-        prompt_from_tray = "Choose a bird from the tray: " + "\n" + "\n".join(birds_in_tray)
-        prompt_from_deck = "type 'deck' to draw from the bird deck."
         tray_is_empty = len(birds_in_tray) == 0
 
         if tray_is_empty:
-            prompt = "The tray is empty, " + prompt_from_deck
-        elif "deck" not in valid_choices:
-            prompt = prompt_from_tray
+            print("  The tray is empty. Type 'deck' to draw from the deck.")
         else:
-            prompt = prompt_from_tray + "\nor " + prompt_from_deck
+            print("  Choose a bird from the tray:")
+            for bird in birds_in_tray:
+                print(f"    {bird}")
+            if "deck" in valid_choices:
+                print("  Or type 'deck' to draw from the deck.")
 
-        chosen_bird = input(prompt).strip()
+        chosen_bird = input("  > ").strip()
         while chosen_bird not in valid_choices:
-            print(f"{chosen_bird} is not a valid choice.")
-            chosen_bird = input(prompt).strip()
+            print(f"  '{chosen_bird}' is not a valid choice.")
+            chosen_bird = input("  > ").strip()
 
         return chosen_bird
 

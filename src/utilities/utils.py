@@ -1,24 +1,40 @@
-# utils.py
+import os
+import shutil
+
+TERM_WIDTH = shutil.get_terminal_size((80, 24)).columns
+
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def render_divider(char="─", width=None):
+    if width is None:
+        width = min(TERM_WIDTH, 60)
+    return char * width
+
+
+def render_header(title, width=None):
+    if width is None:
+        width = min(TERM_WIDTH, 60)
+    return f"{'─' * 2} {title} {'─' * max(0, width - len(title) - 3)}"
 
 
 def render_bird_container(bird_container, capacity=None):
     """
-    Render a bird container.
-    Examples are a bird hand, the bird tray, or a game board
+    Render a bird container (hand, tray, or game board) as a formatted table.
 
     Args:
         bird_container (list[Bird]): The bird container to render.
         capacity (int): The capacity of the bird container.
     """
-    # set the capacity to the length of the bird container if no capacity is provided
     if capacity is None:
         capacity = len(bird_container)
 
-    output = "{:<30s}{:<15s}{:<10s}\n".format("Bird Name", "Point Value", "Food Cost")
+    output = f"  {'Name':<28s} {'VP':>3s}  {'Food':>4s}\n"
     for bird in bird_container:
-        output += f"{bird.get_name():<30s}{bird.get_points():<15d}{bird.get_food_cost():<10d}\n"
+        output += f"  {bird.get_name():<28s} {bird.get_points():>3d}  {bird.get_food_cost():>4d}\n"
 
-    # this will only execute if empty slots should be rendered, for example a GameBoard that isn't full
     for _ in range(len(bird_container), capacity):
-        output += "{:<30s}{:<15s}{:<10s}\n".format("empty", "--", "--")
+        output += f"  {'·':<28s} {'─':>3s}  {'─':>4s}\n"
     return output
