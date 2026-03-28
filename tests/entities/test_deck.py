@@ -1,6 +1,8 @@
 import unittest
-from src.entities.deck import Deck
+
 from src.entities.bird import Bird
+from src.entities.deck import Deck
+
 
 class TestDeck(unittest.TestCase):
     def setUp(self):
@@ -16,8 +18,8 @@ class TestDeck(unittest.TestCase):
         for bird in self.birds:
             self.deck.add_card(bird)
         card = self.deck.draw_card()
-        self.assertEqual(card.get_name(), self.birds[0].get_name()) # the first card should have been drawn
-        self.assertEqual(self.deck.get_count(), 1) # there should be one card left in the deck
+        self.assertEqual(card.get_name(), self.birds[0].get_name())  # the first card should have been drawn
+        self.assertEqual(self.deck.get_count(), 1)  # there should be one card left in the deck
 
     def test_draw_card_with_empty_deck(self):
         with self.assertRaises(ValueError):
@@ -34,5 +36,6 @@ class TestDeck(unittest.TestCase):
         # Check that the order of cards has changed (most of the time)
         self.assertNotEqual(self.deck.cards, original_deck)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

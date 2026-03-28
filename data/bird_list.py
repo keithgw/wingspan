@@ -180,5 +180,5 @@ birds = [
     Bird("Yellow-Billed Cuckoo", 5, 3),
     Bird("Yellow-Breasted Chat", 5, 3),
     Bird("Yellow-Headed Blackbird", 4, 2),
-    Bird("Yellow-Rumped Warbler", 1, 3)
+    Bird("Yellow-Rumped Warbler", 1, 3),
 ]

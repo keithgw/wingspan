@@ -1,14 +1,15 @@
 import unittest
-from src.entities.hand import Hand, BirdHand
+from io import StringIO
+from unittest.mock import patch
+
 from src.entities.bird import Bird
 from src.entities.deck import Deck
-from src.entities.tray import Tray
 from src.entities.gameboard import GameBoard
-from unittest.mock import patch
-from io import StringIO
+from src.entities.hand import BirdHand, Hand
+from src.entities.tray import Tray
+
 
 class TestHand(unittest.TestCase):
-
     def setUp(self):
         self.hand = Hand()
         self.test_card = Bird("Osprey", 5, 2)
@@ -53,31 +54,40 @@ class TestHand(unittest.TestCase):
 
     def test_draw_card_from_empty_deck(self):
         empty_deck = Deck()
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch("sys.stdout", new=StringIO()) as fake_out:
             self.hand.draw_card_from_deck(empty_deck)
             self.assertEqual(fake_out.getvalue().strip(), "Error: Deck is empty")
 
-    @patch.object(Hand, 'remove_card', return_value='Osprey')
+    @patch.object(Hand, "remove_card", return_value="Osprey")
     def test_discard_card(self, remove_card_mock):
         self.hand.add_card(self.test_card, self.test_card.get_name())
         discarded_card = self.hand.discard_card(self.test_card.get_name())
 
         remove_card_mock.assert_called_once()
-        self.assertEqual(discarded_card, 'Osprey')
+        self.assertEqual(discarded_card, "Osprey")
 
     def test_render(self):
         # check that render calls render_bird_container, and prints the returned value
-        with patch('src.entities.hand.render_bird_container', return_value="Mocked render output") as mock_render, \
-            patch('sys.stdout', new=StringIO()) as mock_stdout:
+        with (
+            patch(
+                "src.entities.hand.render_bird_container",
+                return_value="Mocked render output",
+            ) as mock_render,
+            patch("sys.stdout", new=StringIO()) as mock_stdout,
+        ):
             self.hand.render()
             self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
             mock_render.assert_called_once_with(bird_container=self.hand.get_card_names_in_hand())
 
-class TestBirdHand(unittest.TestCase):
 
+class TestBirdHand(unittest.TestCase):
     def setUp(self):
         self.hand = BirdHand()
-        self.birds = [Bird("Osprey", 5, 2), Bird("Peregrine Falcon", 3, 1), Bird("Anhinga", 4, 2)]
+        self.birds = [
+            Bird("Osprey", 5, 2),
+            Bird("Peregrine Falcon", 3, 1),
+            Bird("Anhinga", 4, 2),
+        ]
 
     def test_draw_bird_from_tray(self):
         tray = Tray()
@@ -101,5 +111,6 @@ class TestBirdHand(unittest.TestCase):
         self.hand.tuck_card(card_name)
         self.assertNotIn(card_name, self.hand.cards)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
