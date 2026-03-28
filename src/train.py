@@ -200,11 +200,11 @@ def plot_metrics(args):
     ax2.set_ylabel("Mean Score Diff vs Random")
     ax2.grid(True, alpha=0.3)
 
-    plt.tight_layout()
+    fig.tight_layout()
 
     if args.save:
         plot_path = os.path.join(args.metrics_dir, "training_progress.png")
-        plt.savefig(plot_path, dpi=150)
+        fig.savefig(plot_path, dpi=150)
         print(f"Plot saved to {plot_path}")
     else:
         plt.show()
