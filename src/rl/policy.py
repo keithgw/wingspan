@@ -45,6 +45,7 @@ class MCTSPolicy(Policy):
         super().__init__()
         self.num_simulations = num_simulations
         self.root = None
+        self._mcts_player_index = None
 
     def _rhoUCT(self, state, actions):
         """UCT with environment model (rho). Returns max_a[Q(s, a)]."""
