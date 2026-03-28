@@ -23,8 +23,11 @@ uv run python -m src.game --num_players 2 --num_human 1
 # Play against an MCTS bot (smarter, ~0.2s per decision)
 uv run python -m src.game --num_players 2 --num_human 1 --policy mcts
 
-# Crank up MCTS simulations for stronger play
+# MCTS with more simulations (stronger, slower)
 uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simulations 500
+
+# MCTS with learned playout policy (uses trained policy instead of random rollouts)
+uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --playout_policy models/policy_latest.npz
 
 # Watch two bots play each other
 uv run python -m src.game
@@ -109,7 +112,7 @@ wingspan/
 - **MCTSPolicy** implements the full select → expand → playout → backpropagate loop:
   - **Select**: traverse the tree via UCB1 to find a leaf node
   - **Expand**: generate child nodes for each legal action (using `copy.deepcopy`)
-  - **Playout**: simulate the game to completion using `RandomPolicy` (cloned via `MCTSGameState.from_representation` for imperfect-information determinization)
+  - **Playout**: simulate the game to completion using `RandomPolicy` or a trained `LinearPolicy` (cloned via `MCTSGameState.from_representation` for imperfect-information determinization)
   - **Backpropagate**: walk parent pointers updating visit counts and rewards
 - **MCTSGameState** extends GameState with hashable `to_representation()` / `from_representation()` for state serialization, handling hidden information (opponent hands stored as counts)
 
@@ -126,7 +129,6 @@ wingspan/
 
 See [GitHub Issues](https://github.com/keithgw/wingspan/issues) for the full backlog. Next milestones:
 
-- **#73** — Replace random playout policy with a learned policy
 - **#75** — Add a value network to evaluate positions without full playout
 - **#80** — Interpret learned policies to extract game insights
 

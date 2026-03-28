@@ -7,6 +7,7 @@ from src.entities.deck import Deck
 from src.entities.game_state import GameState, MCTSGameState
 from src.entities.hand import BirdHand
 from src.entities.player import BotPlayer
+from src.rl.policy import RandomPolicy
 
 
 class TestGameState(unittest.TestCase):
@@ -185,6 +186,46 @@ class TestMCTSGameState(unittest.TestCase):
         )
         game_state = MCTSGameState.from_representation(rep)
         self.assertEqual(game_state.to_representation(), rep)
+
+    def _make_representation(self):
+        board_rep = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
+        tray_rep = ((1, 1), (1, 2), (3, 1))
+        hand_rep = ((3, 1), (5, 1))
+        return frozenset(
+            [
+                ("num_turns", 10),
+                ("game_turn", 5),
+                ("phase", "choose_action"),
+                ("bird_deck", 20),
+                ("discard_pile", 151),
+                ("tray", tray_rep),
+                ("bird_feeder", 5),
+                (
+                    "current_player",
+                    frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", hand_rep)]),
+                ),
+                (
+                    "opponents",
+                    (
+                        frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", 2)]),
+                        frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", 2)]),
+                    ),
+                ),
+            ]
+        )
+
+    def test_from_representation_default_uses_random_policy(self):
+        rep = self._make_representation()
+        game_state = MCTSGameState.from_representation(rep)
+        for player in game_state.get_players():
+            self.assertIsInstance(player.policy, RandomPolicy)
+
+    def test_from_representation_with_playout_policy(self):
+        rep = self._make_representation()
+        custom_policy = Mock()
+        game_state = MCTSGameState.from_representation(rep, playout_policy=custom_policy)
+        for player in game_state.get_players():
+            self.assertIs(player.policy, custom_policy)
 
     def test_from_game_state(self):
         gs = GameState(

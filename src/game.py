@@ -271,7 +271,13 @@ if __name__ == "__main__":
         "--num_simulations",
         type=positive_int,
         default=100,
-        help="Number of MCTS simulations per decision (only used with --policy mcts)",
+        help="Number of MCTS simulations per decision (only with --policy mcts)",
+    )
+    parser.add_argument(
+        "--playout_policy",
+        type=str,
+        default=None,
+        help="Path to a trained policy for MCTS playouts (only with --policy mcts)",
     )
 
     parser.add_argument(
@@ -300,12 +306,16 @@ if __name__ == "__main__":
 
     advisor = _load_policy(args.hints, "Hints policy") if args.hints else None
 
-    bot_policy_factory = None
-    if args.policy == "mcts":
+    playout = _load_policy(args.playout_policy, "Playout policy") if args.playout_policy else None
+
+    def _make_mcts_policy():
         from src.rl.policy import MCTSPolicy
 
-        num_sims = args.num_simulations
-        bot_policy_factory = lambda: MCTSPolicy(num_simulations=num_sims)  # noqa: E731
+        return MCTSPolicy(num_simulations=args.num_simulations, playout_policy=playout)
+
+    bot_policy_factory = None
+    if args.policy == "mcts":
+        bot_policy_factory = _make_mcts_policy
     elif args.policy == "learned":
         if not args.policy_path:
             parser.error("--policy_path is required when using --policy learned")
