@@ -3,11 +3,13 @@
 import numpy as np
 
 
-def compute_policy_gradient(experience, weights, num_actions):
+def compute_policy_gradient(experience, weights, num_actions, baseline=0.0):
     """Compute the REINFORCE gradient for a single experience.
 
-    grad_log_pi = features * (one_hot(action) - softmax(logits))
-    scaled by reward.
+    grad_log_pi = features^T * (one_hot(action) - softmax(logits)) * (reward - baseline)
+
+    The baseline reduces variance: losses (reward < baseline) produce
+    negative gradients that discourage the chosen action.
     """
     features = experience.features
     logits = features @ weights[:, :num_actions]
@@ -19,16 +21,19 @@ def compute_policy_gradient(experience, weights, num_actions):
 
     # One-hot for the taken action
     one_hot = np.zeros(num_actions)
-    action_idx = min(experience.action_index, num_actions - 1)
-    one_hot[action_idx] = 1.0
+    one_hot[experience.action_index] = 1.0
 
-    # grad_log_pi = features^T * (one_hot - probs), scaled by reward
-    grad = np.outer(features, (one_hot - probs)) * experience.reward
+    # Advantage = reward - baseline
+    advantage = experience.reward - baseline
+    grad = np.outer(features, (one_hot - probs)) * advantage
     return grad
 
 
 def train_batch(policy, experiences, learning_rate=0.01):
-    """Update policy weights using REINFORCE on a batch of experiences.
+    """Update policy weights using REINFORCE with baseline on a batch of experiences.
+
+    Uses mean batch reward as the baseline so that losses produce negative
+    gradients and the policy learns from both wins and losses.
 
     Returns the mean reward of the batch (for monitoring).
     """
@@ -36,14 +41,15 @@ def train_batch(policy, experiences, learning_rate=0.01):
         return 0.0
 
     num_actions = policy.num_actions
+    baseline = np.mean([exp.reward for exp in experiences])
+
     total_grad = np.zeros_like(policy.weights)
 
     for exp in experiences:
-        grad = compute_policy_gradient(exp, policy.weights, num_actions)
-        # Pad gradient columns if fewer actions than policy columns
+        grad = compute_policy_gradient(exp, policy.weights, num_actions, baseline=baseline)
         total_grad[:, :num_actions] += grad
 
     # Average gradient and apply
     policy.weights += learning_rate * total_grad / len(experiences)
 
-    return np.mean([exp.reward for exp in experiences])
+    return baseline

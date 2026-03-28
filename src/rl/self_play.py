@@ -6,38 +6,34 @@ from collections import namedtuple
 
 import numpy as np
 
-from src.rl.featurizer import featurize
+from src.rl.featurizer import ACTION_INDEX, featurize
 from src.rl.policy import Policy
 
 Experience = namedtuple("Experience", ["features", "action_index", "reward"])
 
 
 class LoggingPolicy(Policy):
-    """Wraps a policy to log (features, action_index) at each decision.
+    """Wraps a policy to log (features, canonical_action_index) for CHOOSE_ACTION decisions only.
 
-    After a game, call assign_rewards() to pair each logged decision
-    with the game outcome.
+    Sub-decisions (which bird to play/draw) are delegated but not logged,
+    since the linear model handles them uniformly and they add noise.
     """
 
     def __init__(self, inner_policy):
         self.inner_policy = inner_policy
-        self.log = []  # list of (features, action_index)
-
-    def _log_and_choose(self, state, actions):
-        features = featurize(state)
-        chosen = self.inner_policy(state, actions)
-        action_index = actions.index(chosen)
-        self.log.append((features, action_index))
-        return chosen
+        self.log = []  # list of (features, canonical_action_index)
 
     def _policy_choose_action(self, state, legal_actions):
-        return self._log_and_choose(state, legal_actions)
+        features = featurize(state)
+        chosen = self.inner_policy(state, legal_actions)
+        self.log.append((features, ACTION_INDEX[chosen]))
+        return chosen
 
     def _policy_choose_a_bird_to_play(self, state, playable_birds):
-        return self._log_and_choose(state, playable_birds)
+        return self.inner_policy(state, playable_birds)
 
     def _policy_choose_a_bird_to_draw(self, state, valid_choices):
-        return self._log_and_choose(state, valid_choices)
+        return self.inner_policy(state, valid_choices)
 
     def assign_rewards(self, reward):
         """Convert logged decisions into Experience tuples with the given reward."""

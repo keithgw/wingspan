@@ -1,6 +1,6 @@
 import unittest
 
-from src.rl.featurizer import NUM_FEATURES
+from src.rl.featurizer import ACTION_INDEX, NUM_FEATURES
 from src.rl.linear_policy import LinearPolicy
 from src.rl.policy import RandomPolicy
 from src.rl.self_play import Experience, LoggingPolicy, SelfPlayRunner
@@ -11,7 +11,7 @@ class TestLoggingPolicy(unittest.TestCase):
         self.inner = RandomPolicy()
         self.logger = LoggingPolicy(self.inner)
 
-    def test_delegates_to_inner_policy(self):
+    def test_logs_choose_action_decisions(self):
         from src.game import WingspanGame
 
         game = WingspanGame(num_players=2, num_turns=1, num_starting_cards=2)
@@ -20,19 +20,19 @@ class TestLoggingPolicy(unittest.TestCase):
         actions = ["gain_food", "draw_a_bird"]
         result = self.logger(state, actions)
         self.assertIn(result, actions)
+        self.assertEqual(len(self.logger.log), 1)
+        features, action_index = self.logger.log[0]
+        self.assertEqual(features.shape, (NUM_FEATURES,))
+        self.assertEqual(action_index, ACTION_INDEX[result])
 
-    def test_logs_decisions(self):
+    def test_does_not_log_bird_sub_decisions(self):
         from src.game import WingspanGame
 
         game = WingspanGame(num_players=2, num_turns=1, num_starting_cards=2)
         state = game.game_state
-        state.phase = "choose_action"
-        actions = ["gain_food", "draw_a_bird"]
-        self.logger(state, actions)
-        self.assertEqual(len(self.logger.log), 1)
-        features, action_index = self.logger.log[0]
-        self.assertEqual(features.shape, (NUM_FEATURES,))
-        self.assertIn(action_index, (0, 1))
+        state.phase = "choose_a_bird_to_play"
+        self.logger(state, ["Osprey", "Cardinal"])
+        self.assertEqual(len(self.logger.log), 0)
 
     def test_assign_rewards(self):
         from src.game import WingspanGame
@@ -72,6 +72,7 @@ class TestSelfPlayRunner(unittest.TestCase):
         for exp in experiences:
             self.assertEqual(exp.features.shape, (NUM_FEATURES,))
             self.assertIsInstance(exp.action_index, int)
+            self.assertIn(exp.action_index, (0, 1, 2))
             self.assertIn(exp.reward, (0.0, 0.5, 1.0))
 
     def test_run_game_with_different_opponent(self):

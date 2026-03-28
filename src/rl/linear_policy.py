@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.rl.featurizer import NUM_FEATURES, featurize
+from src.rl.featurizer import ACTION_INDEX, NUM_FEATURES, featurize
 from src.rl.policy import Policy
 
 
@@ -9,7 +9,7 @@ class LinearPolicy(Policy):
 
     Maps featurize(state) @ weights → logits per action, then softmax over
     legal actions. Weights are interpretable: each row is a feature, each
-    column is an action preference.
+    column is an action preference (play_a_bird=0, gain_food=1, draw_a_bird=2).
     """
 
     def __init__(self, num_actions=3):
@@ -19,18 +19,22 @@ class LinearPolicy(Policy):
     def _score_actions(self, state, actions):
         """Return (features, probabilities) for the given actions.
 
-        For CHOOSE_ACTION (up to num_actions choices), uses learned weights.
-        For other phases (variable action count), defaults to uniform —
-        the linear model focuses on the strategic action choice.
+        For CHOOSE_ACTION phase, maps actions to canonical column indices
+        so weights have stable meaning. For other phases (bird/draw
+        sub-decisions), defaults to uniform.
         """
         features = featurize(state)
-        n = len(actions)
 
-        if n <= self.num_actions:
-            logits = (features @ self.weights)[:n]
+        # Check if all actions have canonical indices
+        canonical = all(a in ACTION_INDEX for a in actions)
+
+        if canonical:
+            all_logits = features @ self.weights
+            indices = [ACTION_INDEX[a] for a in actions]
+            logits = all_logits[indices]
         else:
-            # More actions than weight columns (e.g., 4 tray birds) — uniform
-            logits = np.zeros(n)
+            # Sub-decision (which bird to play/draw) — uniform
+            logits = np.zeros(len(actions))
 
         # Softmax with numerical stability
         shifted = logits - np.max(logits)
@@ -40,7 +44,7 @@ class LinearPolicy(Policy):
         return features, probs
 
     def get_action_probabilities(self, state, actions):
-        """Return probability distribution over actions (for training)."""
+        """Return probability distribution over actions."""
         _, probs = self._score_actions(state, actions)
         return probs
 

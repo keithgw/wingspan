@@ -39,15 +39,24 @@ class TestLinearPolicy(unittest.TestCase):
     def test_uniform_with_zero_weights(self):
         actions = ["play_a_bird", "gain_food", "draw_a_bird"]
         probs = self.policy.get_action_probabilities(self.state, actions)
-        # Zero weights → uniform distribution
         np.testing.assert_allclose(probs, [1 / 3, 1 / 3, 1 / 3])
 
     def test_nonzero_weights_change_distribution(self):
         actions = ["play_a_bird", "gain_food", "draw_a_bird"]
-        self.policy.weights[:, 0] = 10.0  # Heavily favor first action
+        self.policy.weights[:, 0] = 10.0  # Heavily favor play_a_bird (column 0)
         probs = self.policy.get_action_probabilities(self.state, actions)
         self.assertGreater(probs[0], probs[1])
         self.assertGreater(probs[0], probs[2])
+
+    def test_canonical_indices_stable_with_subset(self):
+        # With all 3 actions, column 1 = gain_food
+        self.policy.weights[:, 1] = 10.0
+        all_probs = self.policy.get_action_probabilities(self.state, ["play_a_bird", "gain_food", "draw_a_bird"])
+        # With 2 actions, gain_food should still map to column 1
+        sub_probs = self.policy.get_action_probabilities(self.state, ["gain_food", "draw_a_bird"])
+        # gain_food should have highest probability in both cases
+        self.assertEqual(np.argmax(all_probs), 1)  # index of gain_food in full list
+        self.assertEqual(np.argmax(sub_probs), 0)  # index of gain_food in subset
 
     def test_save_and_load(self):
         self.policy.weights = np.random.randn(NUM_FEATURES, 3)
@@ -57,17 +66,18 @@ class TestLinearPolicy(unittest.TestCase):
             loaded = LinearPolicy.load(path)
             np.testing.assert_array_equal(loaded.weights, self.policy.weights)
 
-    def test_works_for_bird_to_play_phase(self):
+    def test_bird_sub_decision_is_uniform(self):
         self.state.phase = "choose_a_bird_to_play"
         birds = ["Osprey", "Cardinal"]
-        result = self.policy(self.state, birds)
-        self.assertIn(result, birds)
+        self.policy.weights[:, 0] = 100.0  # Should not affect sub-decisions
+        probs = self.policy.get_action_probabilities(self.state, birds)
+        np.testing.assert_allclose(probs, [0.5, 0.5])
 
-    def test_works_for_bird_to_draw_phase(self):
+    def test_draw_sub_decision_is_uniform(self):
         self.state.phase = "choose_a_bird_to_draw"
-        choices = ["Blue Jay", "deck"]
-        result = self.policy(self.state, choices)
-        self.assertIn(result, choices)
+        choices = ["Blue Jay", "Cardinal", "deck"]
+        probs = self.policy.get_action_probabilities(self.state, choices)
+        np.testing.assert_allclose(probs, [1 / 3, 1 / 3, 1 / 3])
 
 
 if __name__ == "__main__":
