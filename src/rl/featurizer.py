@@ -25,6 +25,23 @@ FEATURE_NAMES = [
 
 NUM_FEATURES = len(FEATURE_NAMES)
 
+# Per-option features for sub-decisions (which bird to play/draw)
+OPTION_FEATURE_NAMES = [
+    "option_points",
+    "option_cost",
+    "option_ratio",
+    "option_affordable",
+    "option_turns_to_afford",
+    "option_playable_in_time",
+    "option_points_vs_opponent",
+    "option_is_deck",
+]
+
+NUM_OPTION_FEATURES = len(OPTION_FEATURE_NAMES)
+
+# Combined feature size for sub-decision scoring
+NUM_SUB_FEATURES = NUM_FEATURES + NUM_OPTION_FEATURES
+
 
 def _points_cost_ratio(bird):
     """Return points/cost ratio, treating cost-0 birds as high efficiency (capped at 5)."""
@@ -105,6 +122,65 @@ def featurize(state):
             opponent_best_score / 50.0,
             opponent_avg_food / 10.0,
             score_lead / 50.0,
+        ],
+        dtype=np.float64,
+    )
+
+
+def featurize_option(state, bird_name):
+    """Compute features for a single bird option (or 'deck') in context.
+
+    Returns a numpy array of shape (NUM_OPTION_FEATURES,).
+    For 'deck', uses zeros for bird-specific features and sets option_is_deck=1.
+    """
+    player = state.get_current_player()
+    food = player.get_food_supply().amount
+    turns_left = player.get_turns_remaining()
+
+    opponents = [p for p in state.get_players() if p is not player]
+    opponent_best_score = max((p.get_game_board().get_score() for p in opponents), default=0)
+
+    if bird_name == "deck":
+        return np.array(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            dtype=np.float64,
+        )
+
+    # Look up the bird object from hand or tray
+    bird = None
+    for b in player.get_bird_hand().get_cards_in_hand():
+        if b.get_name() == bird_name:
+            bird = b
+            break
+    if bird is None:
+        for b in state.get_tray().get_birds_in_tray():
+            if b.get_name() == bird_name:
+                bird = b
+                break
+    if bird is None:
+        return np.zeros(NUM_OPTION_FEATURES, dtype=np.float64)
+
+    points = bird.get_points()
+    cost = bird.get_food_cost()
+    ratio = _points_cost_ratio(bird)
+    affordable = 1.0 if food >= cost else 0.0
+    turns_to_afford = max(0, cost - food) if food < cost else 0.0
+    # Can we afford and play it before the game ends?
+    # Need 1 turn to play + turns_to_afford turns to gain food
+    turns_needed = turns_to_afford + 1
+    playable_in_time = 1.0 if turns_needed <= turns_left else 0.0
+    points_vs_opponent = points / max(opponent_best_score, 1)
+
+    return np.array(
+        [
+            points / 10.0,
+            cost / 5.0,
+            ratio / 5.0,
+            affordable,
+            turns_to_afford / 5.0,
+            playable_in_time,
+            min(points_vs_opponent, 2.0) / 2.0,
+            0.0,  # not deck
         ],
         dtype=np.float64,
     )

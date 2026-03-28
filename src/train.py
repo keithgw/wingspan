@@ -91,12 +91,12 @@ def train(args):
 
     for iteration in range(start_iteration + 1, start_iteration + args.num_iterations + 1):
         # Collect experience via self-play
-        experiences, stats = runner.collect_experience(
+        action_exps, sub_exps, stats = runner.collect_experience(
             policy, num_games=args.games_per_iteration, num_turns=args.num_turns
         )
 
         # Train on collected experience
-        train_batch(policy, experiences, learning_rate=args.learning_rate)
+        train_batch(policy, action_exps, sub_exps, learning_rate=args.learning_rate)
 
         # Evaluate against random baseline
         eval_results = evaluate(policy, baseline, num_games=args.eval_games, num_turns=args.num_turns)
