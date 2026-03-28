@@ -48,16 +48,11 @@ class MCTSPolicy(Policy):
         from src.entities.game_state import MCTSGameState
         from src.rl.mcts import Node
 
-        state = MCTSGameState.from_game_state(state)
-        candidate_root = Node(state=state)
+        mcts_state = MCTSGameState.from_game_state(state)
+        root = Node(state=mcts_state)
 
-        # Check if we can reuse a subtree from previous simulations
-        if self.root is None:
-            root = candidate_root
-        elif self.root == candidate_root:
-            root = self.root
-        else:
-            root = candidate_root
+        # TODO: implement subtree reuse by comparing state representations
+        # (requires Node.__eq__/__hash__ based on state.to_representation())
 
         # Run simulations to estimate action values
         self._run_simulations(root, self.num_simulations)
@@ -65,9 +60,6 @@ class MCTSPolicy(Policy):
         # Choose the most-visited child
         best_child = self._best_child(root)
         best_action = best_child.action
-
-        # Persist subtree for potential reuse
-        self.root = best_child
 
         assert best_action in actions, f"Chosen action must be one of {actions}, but was {best_action}."
         return best_action
