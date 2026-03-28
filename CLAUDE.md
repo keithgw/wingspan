@@ -39,6 +39,15 @@ uv run python -m src.game --num_players 2 --num_human 1 --policy mcts
 
 # Stronger MCTS (more simulations, slower)
 uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simulations 500
+
+# Train a policy
+uv run python -m src.train train --num_iterations 50 --games_per_iteration 100
+
+# Evaluate trained policy
+uv run python -m src.train evaluate --policy_path models/policy_latest.npz
+
+# Play against trained policy
+uv run python -m src.game --policy learned --policy_path models/policy_latest.npz
 ```
 
 ## Architecture Notes
@@ -49,9 +58,10 @@ uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simu
 - **Actions**: 3 of 4 implemented: play_a_bird, gain_food, draw_a_bird. Lay eggs NOT implemented
 - **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or powers). Single food type. No bonus cards or end-of-round goals
 - **Entity serialization**: All entities have `to_representation()` returning hashable types; BirdHand, GameBoard, Tray have `from_representation()` for reconstruction
+- **Training**: `LinearPolicy` (numpy-based, interpretable weights) trained via REINFORCE self-play. `featurizer.py` converts GameState to 17 named features. `self_play.py` runs games and collects experience. `train.py` is the CLI entry point
 
 ## Next Milestone
-Self-play training framework (#74): run bot-vs-bot games, collect experience, train policies, persist for reuse. Then learned playout policy (#73) and value network (#75).
+Learned playout policy (#73), value network (#75), and policy interpretation (#80).
 
 ## Conventions
 - Python unittest framework, run with pytest

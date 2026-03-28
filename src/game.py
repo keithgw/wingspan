@@ -217,7 +217,8 @@ class WingspanGame:
             if not is_human:
                 bot_actions.append((current_player.get_name(), action))
 
-        self._render_game_summary()
+        if any(isinstance(p, HumanPlayer) for p in self.game_state.get_players()):
+            self._render_game_summary()
 
 
 if __name__ == "__main__":
@@ -251,8 +252,8 @@ if __name__ == "__main__":
         "--policy",
         type=str,
         default="random",
-        choices=["random", "mcts"],
-        help="Bot policy: 'random' (fast) or 'mcts' (smarter, slower)",
+        choices=["random", "mcts", "learned"],
+        help="Bot policy: 'random', 'mcts', or 'learned' (requires --policy_path)",
     )
 
     def positive_int(value):
@@ -268,6 +269,13 @@ if __name__ == "__main__":
         help="Number of MCTS simulations per decision (only used with --policy mcts)",
     )
 
+    parser.add_argument(
+        "--policy_path",
+        type=str,
+        default=None,
+        help="Path to a trained policy file (required with --policy learned)",
+    )
+
     args = parser.parse_args()
 
     bot_policy_factory = None
@@ -276,6 +284,17 @@ if __name__ == "__main__":
 
         num_sims = args.num_simulations
         bot_policy_factory = lambda: MCTSPolicy(num_simulations=num_sims)  # noqa: E731
+    elif args.policy == "learned":
+        import os
+
+        from src.rl.linear_policy import LinearPolicy
+
+        if not args.policy_path:
+            parser.error("--policy_path is required when using --policy learned")
+        if not os.path.exists(args.policy_path):
+            parser.error(f"Policy file not found: {args.policy_path}")
+        policy_path = args.policy_path
+        bot_policy_factory = lambda: LinearPolicy.load(policy_path)  # noqa: E731
 
     game = WingspanGame(
         num_players=args.num_players,
