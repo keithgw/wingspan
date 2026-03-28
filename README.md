@@ -29,6 +29,18 @@ uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simu
 # Watch two bots play each other
 uv run python -m src.game
 
+# Train a policy via self-play (REINFORCE with linear function approximation)
+uv run python -m src.train train --num_iterations 50 --games_per_iteration 100
+
+# Evaluate a trained policy against random
+uv run python -m src.train evaluate --policy_path models/policy_latest.npz
+
+# Evaluate against MCTS
+uv run python -m src.train evaluate --policy_path models/policy_latest.npz --opponent mcts
+
+# Play against a trained policy
+uv run python -m src.game --num_players 2 --num_human 1 --policy learned --policy_path models/policy_latest.npz
+
 # Run tests
 uv run python -m pytest
 ```
@@ -66,11 +78,17 @@ wingspan/
 │   │   └── tray.py         # Face-up bird display (3 slots)
 │   ├── rl/
 │   │   ├── policy.py       # Policy ABC, RandomPolicy, MCTSPolicy
-│   │   └── mcts.py         # Node and Edge classes for game tree
+│   │   ├── mcts.py         # Node and Edge classes for game tree
+│   │   ├── linear_policy.py # LinearPolicy (trainable, numpy-based)
+│   │   ├── featurizer.py   # GameState → feature vector for learning
+│   │   ├── self_play.py    # Bot-vs-bot game runner + experience collection
+│   │   ├── trainer.py      # REINFORCE policy gradient training
+│   │   └── evaluator.py    # Win rate evaluation against baselines
 │   ├── utilities/
 │   │   ├── utils.py        # Terminal rendering helpers
 │   │   └── player_factory.py  # Player creation (avoids circular imports)
-│   └── game.py             # Game setup, turn loop, CLI entry point
+│   ├── game.py             # Game setup, turn loop, CLI entry point
+│   └── train.py            # CLI for training and evaluation
 ├── tests/                  # 157 unit tests (unittest + pytest)
 ├── data/
 │   ├── bird_data.csv       # Source bird data
@@ -95,13 +113,20 @@ wingspan/
   - **Backpropagate**: walk parent pointers updating visit counts and rewards
 - **MCTSGameState** extends GameState with hashable `to_representation()` / `from_representation()` for state serialization, handling hidden information (opponent hands stored as counts)
 
+### Training
+- **LinearPolicy** maps state features → action preferences via a learned weight matrix. Interpretable: each weight corresponds to a named feature (#80)
+- **Featurizer** converts GameState to a 17-feature numpy vector (game progress, food, score, hand/tray quality, points-to-cost ratios, opponent state)
+- **REINFORCE** policy gradient updates weights based on self-play game outcomes
+- **Self-play runner** plays bot-vs-bot games, collects (state, action, reward) experience tuples
+- **Evaluator** measures win rate against random or MCTS baselines
+
 ## Roadmap
 
 See [GitHub Issues](https://github.com/keithgw/wingspan/issues) for the full backlog. Next milestones:
 
-- **#74** — Self-play training framework with policy persistence
 - **#73** — Replace random playout policy with a learned policy
 - **#75** — Add a value network to evaluate positions without full playout
+- **#80** — Interpret learned policies to extract game insights
 
 ## References
 
