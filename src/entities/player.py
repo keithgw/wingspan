@@ -3,6 +3,12 @@ from src.entities.gameboard import GameBoard
 
 
 class Player:
+    """Base class for game players. Manages hand, food, board, and turn actions.
+
+    Subclasses must implement _choose_action, _choose_a_bird_to_play,
+    and _choose_a_bird_to_draw to define decision-making behavior.
+    """
+
     def __init__(self, name, bird_hand, food_supply, num_turns_remaining, game_board=None):
         self.name = name
         self.bird_hand = bird_hand
@@ -35,6 +41,7 @@ class Player:
         return [bird.get_name() for bird in self.bird_hand.get_cards_in_hand() if self.food_supply.can_play_bird(bird)]
 
     def _enumerate_legal_actions(self, tray, bird_deck):
+        """Return the list of actions available given the current board, hand, food, tray, and deck."""
         legal_actions = []
 
         # Check if player can play a bird
@@ -55,11 +62,13 @@ class Player:
         raise NotImplementedError
 
     def request_action(self, game_state):
+        """Enumerate legal actions, delegate choice to subclass, and return the chosen action."""
         legal_actions = self._enumerate_legal_actions(tray=game_state.get_tray(), bird_deck=game_state.get_bird_deck())
         action = self._choose_action(legal_actions=legal_actions, game_state=game_state)
         return action
 
     def take_action(self, action, game_state):
+        """Execute the chosen action, mutating the game state accordingly."""
         if action not in self.actions:
             raise Exception(f"Action {action} is not valid.")
         elif action == self.actions[0]:
@@ -73,6 +82,7 @@ class Player:
         raise NotImplementedError
 
     def play_a_bird(self, game_state):
+        """Choose a playable bird, pay its food cost, and place it on the board."""
         playable_birds = self._enumerate_playable_birds()
         bird_name = self._choose_a_bird_to_play(playable_birds=playable_birds, game_state=game_state)
 
@@ -81,6 +91,7 @@ class Player:
         self.bird_hand.play_bird(bird_name=bird_name, game_board=self.game_board)
 
     def gain_food(self, bird_feeder):
+        """Take one food from the bird feeder."""
         bird_feeder.take_food()
         self.food_supply.increment(1)
 
@@ -88,6 +99,7 @@ class Player:
         raise NotImplementedError
 
     def draw_a_bird(self, game_state):
+        """Choose a bird from the tray or deck and add it to hand."""
         tray = game_state.get_tray()
         bird_deck = game_state.get_bird_deck()
 
@@ -111,6 +123,7 @@ class Player:
         return self.score
 
     def end_turn(self):
+        """Decrement turns remaining and update score from the board."""
         self.turns_remaining -= 1
         self.score = self.game_board.get_score()
 
@@ -119,6 +132,8 @@ class Player:
 
 
 class HumanPlayer(Player):
+    """Player that makes decisions via CLI prompts."""
+
     def _choose_action(self, legal_actions, game_state):
         actions_map = {"1": self.actions[0], "2": self.actions[1], "3": self.actions[2]}
 
@@ -174,6 +189,8 @@ class HumanPlayer(Player):
 
 
 class BotPlayer(Player):
+    """Player that delegates all decisions to a Policy object."""
+
     def __init__(self, policy, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.policy = policy

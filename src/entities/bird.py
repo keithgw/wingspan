@@ -1,4 +1,6 @@
 class Bird:
+    """A bird card with a name, victory point value, and food cost to play."""
+
     def __init__(self, common_name, points, food_cost):
         self.common_name = common_name
         self.points = points

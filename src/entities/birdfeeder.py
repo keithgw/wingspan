@@ -1,4 +1,6 @@
 class BirdFeeder:
+    """Shared food supply that holds up to 5 food tokens and auto-rerolls when empty."""
+
     def __init__(self, food_count=0):
         self.food_count = food_count
 

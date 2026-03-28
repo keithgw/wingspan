@@ -2,6 +2,8 @@ from src.constants import VALID_PHASES
 
 
 class GameState:
+    """Central game state holding all shared objects: deck, tray, feeder, players, and turn tracking."""
+
     def __init__(
         self,
         num_turns,
@@ -83,6 +85,13 @@ class GameState:
 
 
 class MCTSGameState(GameState):
+    """GameState extended with hashable serialization for use as MCTS tree node keys.
+
+    Handles hidden information: opponent hands are stored as counts (not contents),
+    deck is stored as a count. Supports round-trip serialization via
+    to_representation() / from_representation().
+    """
+
     def set_tray(self, tray):
         self.tray = tray
 

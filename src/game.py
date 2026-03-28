@@ -19,6 +19,8 @@ DEFAULT_NUM_STARTING_CARDS = 2
 
 
 class WingspanGame:
+    """Orchestrates a game of Wingspan: setup, turn loop, rendering, and scoring."""
+
     def __init__(
         self,
         game_state=None,

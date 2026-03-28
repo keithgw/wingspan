@@ -8,6 +8,13 @@ from src.constants import CHOOSE_A_BIRD_TO_DRAW, CHOOSE_A_BIRD_TO_PLAY, CHOOSE_A
 
 
 class Policy:
+    """Abstract base for policies that map (state, actions) to a chosen action string.
+
+    Dispatches to phase-specific methods based on state.phase. Subclasses must
+    implement _policy_choose_action, _policy_choose_a_bird_to_play, and
+    _policy_choose_a_bird_to_draw.
+    """
+
     def __call__(self, state, actions):
         if state.phase == CHOOSE_ACTION:
             return self._policy_choose_action(state, actions)
@@ -27,6 +34,8 @@ class Policy:
 
 
 class RandomPolicy(Policy):
+    """Policy that selects uniformly at random from legal actions."""
+
     def _uniform_random_choice(self, actions):
         """Return a choice uniformly at random from the list of actions."""
         return np.random.choice(actions)
@@ -42,6 +51,12 @@ class RandomPolicy(Policy):
 
 
 class MCTSPolicy(Policy):
+    """Policy that uses Monte Carlo Tree Search (rhoUCT) to select actions.
+
+    Builds a game tree via repeated select-expand-playout-backpropagate cycles,
+    then returns the action leading to the most-visited child of the root.
+    """
+
     def __init__(self, num_simulations=1000):
         super().__init__()
         self.num_simulations = num_simulations
@@ -202,6 +217,7 @@ class MCTSPolicy(Policy):
             node = node.parent
 
     def _run_simulations(self, root, num_simulations):
+        """Run the MCTS loop: select leaf, expand, playout, backpropagate."""
         for _ in range(num_simulations):
             leaf = self._select_leaf(root)
             unexplored_node = self._expand(leaf)

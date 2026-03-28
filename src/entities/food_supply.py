@@ -1,4 +1,6 @@
 class FoodSupply:
+    """Per-player food token supply used to pay bird costs."""
+
     def __init__(self, initial_amount=0):
         self.amount = initial_amount
 
@@ -9,6 +11,7 @@ class FoodSupply:
         pass
 
     def decrement(self, amount):
+        """Decrease food by amount. Raises NotEnoughFoodError if insufficient."""
         if self.amount >= amount:
             self.amount -= amount
         else:
