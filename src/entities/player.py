@@ -125,8 +125,11 @@ class HumanPlayer(Player):
         prompt = "Type 1 to play a bird, 2 to gain food, or 3 to draw a bird."
         chosen_action = input(prompt).strip()
 
-        while actions_map[chosen_action] not in legal_actions:
-            print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
+        while chosen_action not in actions_map or actions_map[chosen_action] not in legal_actions:
+            if chosen_action not in actions_map:
+                print(f"Invalid input '{chosen_action}'. {prompt}")
+            else:
+                print(f"You are unable to {actions_map[chosen_action]}. {prompt}")
             chosen_action = input(prompt).strip()
 
         return actions_map[chosen_action]
