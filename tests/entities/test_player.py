@@ -1,5 +1,6 @@
 import unittest
-from unittest.mock import patch
+from io import StringIO
+from unittest.mock import Mock, patch
 
 from src.entities.bird import Bird
 from src.entities.birdfeeder import BirdFeeder
@@ -199,6 +200,81 @@ class TestHumanPlayer(TestPlayerBase):
         valid_choices = self.tray.see_birds_in_tray() + ["deck"]
         choice = self.player._choose_a_bird_to_draw(valid_choices=valid_choices, game_state=self.game_state)
         self.assertEqual(choice, "deck")
+
+
+class TestHumanPlayerAdvisor(TestPlayerBase):
+    def setUp(self):
+        super().setUp()
+        self.advisor = Mock()
+        self.player = HumanPlayer(
+            name=self.name,
+            bird_hand=self.bird_hand,
+            food_supply=self.food_supply,
+            num_turns_remaining=self.num_turns,
+            advisor=self.advisor,
+        )
+        self.game_state.players = [self.player]
+
+    @patch("builtins.input", return_value="2")
+    def test_action_hints_displayed(self, mock_input):
+        import numpy as np
+
+        self.advisor.get_action_probabilities.return_value = np.array([0.7, 0.2, 0.1])
+        captured = StringIO()
+        with patch("sys.stdout", captured):
+            self.player._choose_action(
+                legal_actions=["play_a_bird", "gain_food", "draw_a_bird"],
+                game_state=self.game_state,
+            )
+        output = captured.getvalue()
+        self.assertIn("Advisor suggests (Action):", output)
+        self.assertIn("play a bird", output)
+        self.assertIn("70.0%", output)
+        self.assertIn("*", output)
+
+    @patch("builtins.input", return_value="Osprey")
+    def test_bird_to_play_hints_displayed(self, mock_input):
+        import numpy as np
+
+        self.advisor.get_action_probabilities.return_value = np.array([0.8, 0.2])
+        captured = StringIO()
+        with patch("sys.stdout", captured):
+            self.player._choose_a_bird_to_play(
+                playable_birds=["Osprey", "Cardinal"],
+                game_state=self.game_state,
+            )
+        output = captured.getvalue()
+        self.assertIn("Advisor suggests (Bird to play):", output)
+        self.assertIn("Osprey", output)
+        self.assertIn("80.0%", output)
+
+    @patch("builtins.input", return_value="deck")
+    def test_bird_to_draw_hints_displayed(self, mock_input):
+        import numpy as np
+
+        self.advisor.get_action_probabilities.return_value = np.array([0.3, 0.3, 0.4])
+        captured = StringIO()
+        with patch("sys.stdout", captured):
+            self.player._choose_a_bird_to_draw(
+                valid_choices=["Blue Jay", "Cardinal", "deck"],
+                game_state=self.game_state,
+            )
+        output = captured.getvalue()
+        self.assertIn("Advisor suggests (Bird to draw):", output)
+        self.assertIn("deck", output)
+        self.assertIn("40.0%", output)
+
+    def test_no_advisor_no_output(self):
+        player_no_advisor = HumanPlayer(
+            name="No Hints",
+            bird_hand=self.bird_hand,
+            food_supply=self.food_supply,
+            num_turns_remaining=self.num_turns,
+        )
+        captured = StringIO()
+        with patch("sys.stdout", captured):
+            player_no_advisor._show_hints(self.game_state, ["gain_food"])
+        self.assertEqual(captured.getvalue(), "")
 
 
 class TestBotPlayer(TestPlayerBase):

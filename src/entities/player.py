@@ -134,8 +134,27 @@ class Player:
 class HumanPlayer(Player):
     """Player that makes decisions via CLI prompts."""
 
+    def __init__(self, *args, advisor=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.advisor = advisor
+
+    def _show_hints(self, game_state, actions, label="Action"):
+        """Display the advisor's recommended probabilities if available."""
+        if self.advisor is None:
+            return
+        probs = self.advisor.get_action_probabilities(game_state, actions)
+        best_idx = probs.argmax()
+        print(f"  Advisor suggests ({label}):")
+        for i, (action, prob) in enumerate(zip(actions, probs)):
+            marker = " *" if i == best_idx else ""
+            display = action.replace("_", " ")
+            print(f"    {display:<20s} {prob:5.1%}{marker}")
+        print()
+
     def _choose_action(self, legal_actions, game_state):
         actions_map = {"1": self.actions[0], "2": self.actions[1], "3": self.actions[2]}
+
+        self._show_hints(game_state, legal_actions)
 
         options = []
         if "play_a_bird" in legal_actions:
@@ -158,6 +177,7 @@ class HumanPlayer(Player):
         return actions_map[chosen_action]
 
     def _choose_a_bird_to_play(self, playable_birds, game_state):
+        self._show_hints(game_state, playable_birds, label="Bird to play")
         print("  Choose a bird to play:")
         for bird in playable_birds:
             print(f"    {bird}")
@@ -168,6 +188,7 @@ class HumanPlayer(Player):
         return chosen_bird
 
     def _choose_a_bird_to_draw(self, valid_choices, game_state):
+        self._show_hints(game_state, valid_choices, label="Bird to draw")
         birds_in_tray = [bird for bird in valid_choices if bird != "deck"]
         tray_is_empty = len(birds_in_tray) == 0
 
