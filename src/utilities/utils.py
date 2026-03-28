@@ -9,13 +9,6 @@ def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def render_divider(char="─", width=None):
-    """Return a horizontal line of the given character."""
-    if width is None:
-        width = min(TERM_WIDTH, 60)
-    return char * width
-
-
 def render_header(title, width=None):
     """Return a section header like '── Title ────────────' padded to width."""
     if width is None:
