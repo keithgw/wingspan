@@ -117,7 +117,7 @@ class WingspanGame:
     def _round_number(self):
         return self.game_state.game_turn // self.game_state.num_players + 1
 
-    def render(self, current_player):
+    def render(self, current_player, bot_actions=None):
         from src.utilities.utils import clear_screen, render_bird_container, render_header
 
         clear_screen()
@@ -128,6 +128,12 @@ class WingspanGame:
 
         turns_word = "turn" if turns_left == 1 else "turns"
         print(f"\n  WINGSPAN  ·  Round {round_num}  ·  {name}'s turn  ·  {turns_left} {turns_word} left\n")
+
+        # Show what bots did since the last human turn
+        if bot_actions:
+            for bot_name, action in bot_actions:
+                print(f"  {bot_name} chose to {action.replace('_', ' ')}.")
+            print()
 
         print(render_header("Bird Feeder"))
         print(f"  Food available: {self.game_state.get_bird_feeder().food_count}\n")
@@ -140,6 +146,15 @@ class WingspanGame:
             )
         )
 
+        # Show opponent boards
+        opponents = [p for p in self.game_state.get_players() if p is not current_player]
+        for opp in opponents:
+            opp_birds = opp.get_game_board().get_birds()
+            opp_score = opp.get_score()
+            opp_food = opp.get_food_supply().amount
+            print(render_header(f"{opp.get_name()} — {opp_score} pts, {opp_food} food"))
+            print(render_bird_container(opp_birds, capacity=opp.get_game_board().capacity))
+
         print(render_header(f"{name}'s Board"))
         board = current_player.get_game_board()
         print(render_bird_container(board.get_birds(), capacity=board.capacity))
@@ -150,13 +165,6 @@ class WingspanGame:
         food = current_player.get_food_supply().amount
         score = current_player.get_score()
         print(f"  Food: {food}  ·  Score: {score}\n")
-
-    def render_bot_action(self, bot, action):
-        from src.utilities.utils import render_divider
-
-        action_display = action.replace("_", " ")
-        print(f"  {bot.get_name()} chose to {action_display}.")
-        print(render_divider("·"))
 
     def get_player_scores(self):
         return [player.get_score() for player in self.game_state.get_players()]
@@ -192,17 +200,20 @@ class WingspanGame:
     def play(self):
         from src.entities.player import HumanPlayer
 
+        bot_actions = []
+
         while not self.game_state.is_game_over():
             current_player = self.game_state.get_current_player()
             is_human = isinstance(current_player, HumanPlayer)
 
             if is_human:
-                self.render(current_player)
+                self.render(current_player, bot_actions=bot_actions)
+                bot_actions = []
 
             action = self.take_turn(current_player)
 
-            if not is_human and any(isinstance(p, HumanPlayer) for p in self.game_state.get_players()):
-                self.render_bot_action(current_player, action)
+            if not is_human:
+                bot_actions.append((current_player.get_name(), action))
 
         self.render_game_summary()
 
