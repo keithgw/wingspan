@@ -14,7 +14,16 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "ruff>=0.9",
+    "pre-commit>=4.0",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src", "data"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

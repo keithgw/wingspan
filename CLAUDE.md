@@ -45,6 +45,8 @@ uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 huma
 
 ## Conventions
 - Python unittest framework, run with pytest
-- `pyproject.toml` manages dependencies via uv; runtime dep: `numpy`, dev dep: `pytest`
+- `pyproject.toml` manages dependencies via uv; runtime dep: `numpy`, dev deps: `pytest`, `ruff`, `pre-commit`
 - `hatchling` build backend; `src` and `data` are the package directories
+- Ruff for linting (E/F/I/UP rules) and formatting (line-length 120)
+- Pre-commit hooks run ruff on commit; CI runs lint + tests on push/PR to main
 - Test files mirror source structure in tests/ directory
