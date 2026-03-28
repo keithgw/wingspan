@@ -144,7 +144,7 @@ class HumanPlayer(Player):
             return
         probs = self.advisor.get_action_probabilities(game_state, actions)
         best_idx = probs.argmax()
-        print("  Advisor suggests:")
+        print(f"  Advisor suggests ({label}):")
         for i, (action, prob) in enumerate(zip(actions, probs)):
             marker = " *" if i == best_idx else ""
             display = action.replace("_", " ")
