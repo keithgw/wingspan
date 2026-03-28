@@ -21,12 +21,15 @@ wingspan/
 
 ## Running
 ```bash
+# Sync dependencies (creates .venv)
+uv sync
+
 # Run tests
-python -m pytest
+uv run python -m pytest
 
 # Run a game (from repo root)
-python -m src.game          # default: 2 bots, 10 turns each
-python -m src.game 2 1      # 2 players, 1 human
+uv run python -m src.game                           # default: 2 bots, 10 turns each
+uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 human
 ```
 
 ## Key Branches
@@ -42,5 +45,6 @@ python -m src.game 2 1      # 2 players, 1 human
 
 ## Conventions
 - Python unittest framework, run with pytest
-- No requirements.txt or setup.py — pure stdlib + pytest
+- `pyproject.toml` manages dependencies via uv; runtime dep: `numpy`, dev dep: `pytest`
+- `hatchling` build backend; `src` and `data` are the package directories
 - Test files mirror source structure in tests/ directory
