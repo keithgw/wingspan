@@ -48,5 +48,6 @@ class TestGameBoard(unittest.TestCase):
         self.gameboard.add_bird(self.mock_card)
         self.assertEqual(self.gameboard.get_score(), self.mock_card.get_points())
 
-    if __name__ == "__main__":
-        unittest.main()
+
+if __name__ == "__main__":
+    unittest.main()
