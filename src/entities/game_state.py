@@ -149,14 +149,16 @@ class MCTSGameState(GameState):
         num_turns_remaining = self._get_turns_remaining(
             num_turns=num_turns, game_turn=game_turn, num_players=num_players
         )
-        return create_bot_player(
-            name=name,
-            bird_hand=hand,
-            food_supply=food_supply,
-            game_board=game_board,
-            num_turns_remaining=num_turns_remaining,
-            policy=playout_policy,
-        )
+        kwargs = {
+            "name": name,
+            "bird_hand": hand,
+            "food_supply": food_supply,
+            "game_board": game_board,
+            "num_turns_remaining": num_turns_remaining,
+        }
+        if playout_policy is not None:
+            kwargs["policy"] = playout_policy
+        return create_bot_player(**kwargs)
 
     def to_representation(self):
         """Serialize the full game state as a hashable frozenset."""
