@@ -19,7 +19,7 @@ class Deck:
     def prepare_deck(self, cards):
         """Add cards to the deck and shuffle."""
         self.cards.extend(cards)
-        self.shuffle()
+        self._shuffle()
 
     def remove_and_return_bird(self, condition):
         """Remove and return the first bird meeting the condition.
@@ -38,5 +38,5 @@ class Deck:
             raise ValueError("Deck is empty")
         return self.cards.pop(0)
 
-    def shuffle(self):
+    def _shuffle(self):
         random.shuffle(self.cards)

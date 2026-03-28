@@ -110,7 +110,7 @@ class WingspanGame:
             players=players,
         )
 
-    def take_turn(self, player):
+    def _take_turn(self, player):
         chosen_action = player.request_action(game_state=self.game_state)
         player.take_action(action=chosen_action, game_state=self.game_state)
         self.game_state.end_player_turn(player=player)
@@ -119,7 +119,7 @@ class WingspanGame:
     def _round_number(self):
         return self.game_state.game_turn // self.game_state.num_players + 1
 
-    def render(self, current_player, bot_actions=None):
+    def _render(self, current_player, bot_actions=None):
         from src.utilities.utils import clear_screen, render_bird_container, render_header
 
         clear_screen()
@@ -176,7 +176,7 @@ class WingspanGame:
         scores = self.get_player_scores()
         return [player_idx for player_idx, score in enumerate(scores) if score == max(scores)]
 
-    def render_game_summary(self):
+    def _render_game_summary(self):
         from src.utilities.utils import clear_screen, render_bird_container, render_header
 
         clear_screen()
@@ -209,15 +209,15 @@ class WingspanGame:
             is_human = isinstance(current_player, HumanPlayer)
 
             if is_human:
-                self.render(current_player, bot_actions=bot_actions)
+                self._render(current_player, bot_actions=bot_actions)
                 bot_actions = []
 
-            action = self.take_turn(current_player)
+            action = self._take_turn(current_player)
 
             if not is_human:
                 bot_actions.append((current_player.get_name(), action))
 
-        self.render_game_summary()
+        self._render_game_summary()
 
 
 if __name__ == "__main__":

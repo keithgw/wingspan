@@ -30,7 +30,7 @@ class TestDeck(unittest.TestCase):
         for letter in "abcdefghijkl":
             self.deck.add_card(letter)
         original_deck = self.deck.cards.copy()
-        self.deck.shuffle()
+        self.deck._shuffle()
         # Check that the deck has the same cards after shuffling
         self.assertEqual(set(self.deck.cards), set(original_deck))
         # Check that the order of cards has changed (most of the time)
