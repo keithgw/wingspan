@@ -114,11 +114,13 @@ wingspan/
 - **MCTSGameState** extends GameState with hashable `to_representation()` / `from_representation()` for state serialization, handling hidden information (opponent hands stored as counts)
 
 ### Training
-- **LinearPolicy** maps state features → action preferences via a learned weight matrix. Interpretable: each weight corresponds to a named feature (#80)
-- **Featurizer** converts GameState to a 17-feature numpy vector (game progress, food, score, hand/tray quality, points-to-cost ratios, opponent state)
-- **REINFORCE** policy gradient updates weights based on self-play game outcomes
-- **Self-play runner** plays bot-vs-bot games, collects (state, action, reward) experience tuples
-- **Evaluator** measures win rate against random or MCTS baselines
+- **LinearPolicy** uses two learned linear models, both interpretable (#80):
+  - **Action choice**: `state_features @ weights → softmax` picks between play/gain/draw. 16 state features (game progress, food, score, hand/tray quality, points-to-cost ratios, opponent state) × 3 action columns
+  - **Sub-decisions**: `[state_features; option_features] @ sub_weights → softmax` picks which bird to play/draw. 8 per-option features (VP, cost, ratio, affordability, time to play, deck flag) let the model learn contextual bird selection
+- **REINFORCE** policy gradient with baseline updates both weight vectors from self-play outcomes
+- **Self-play runner** plays bot-vs-bot games, collects experience for both action and sub-decision levels
+- **Evaluator** measures win rate against random or MCTS baselines, alternating positions to remove first-player bias
+- **Training CLI** (`src/train.py`): train with `--fresh`/`--resume`, evaluate against random or MCTS, plot training progress
 
 ## Roadmap
 
