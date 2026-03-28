@@ -134,7 +134,7 @@ class HumanPlayer(Player):
     def _choose_a_bird_to_play(self, playable_birds, game_state):
         prompt = "Choose a bird to play: " + "\n" + "\n".join(playable_birds) + "\n"
         chosen_bird = input(prompt)
-        while chosen_bird not in self.bird_hand.get_card_names_in_hand():
+        while chosen_bird not in playable_birds:
             print(f"{chosen_bird} is not a valid bird. {prompt}")
             chosen_bird = input(prompt)
         return chosen_bird
