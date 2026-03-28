@@ -5,8 +5,33 @@ Reinforcement learning agents for the board game [Wingspan](https://stonemaierga
 ## Strategy
 
 1. **Game engine** — Implement a playable simplified Wingspan (done)
-2. **MCTS agent** — Monte Carlo Tree Search with UCT to learn action-value distributions (in progress)
-3. **Self-play training** — Agents play against each other to iteratively improve their policies (future)
+2. **MCTS agent** — Monte Carlo Tree Search with UCT to select actions (done)
+3. **Self-play training** — Agents play against each other to iteratively improve their policies (next)
+
+## Playing the Game
+
+```bash
+# Install uv if you don't have it
+# https://docs.astral.sh/uv/getting-started/installation/
+
+# Sync dependencies (creates .venv automatically)
+uv sync
+
+# Play against a random bot
+uv run python -m src.game --num_players 2 --num_human 1
+
+# Play against an MCTS bot (smarter, ~0.2s per decision)
+uv run python -m src.game --num_players 2 --num_human 1 --policy mcts
+
+# Crank up MCTS simulations for stronger play
+uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simulations 500
+
+# Watch two bots play each other
+uv run python -m src.game
+
+# Run tests
+uv run python -m pytest
+```
 
 ## Game Simplifications
 
@@ -28,74 +53,55 @@ These simplifications reduce the state space to make MCTS tractable while preser
 ```
 wingspan/
 ├── src/
+│   ├── constants.py        # Game phase constants
 │   ├── entities/           # Core game objects
 │   │   ├── bird.py         # Bird card (name, VP, food cost)
 │   │   ├── birdfeeder.py   # Shared food supply (5 tokens, auto-reroll)
 │   │   ├── deck.py         # Draw pile with shuffle
 │   │   ├── food_supply.py  # Per-player food tokens
 │   │   ├── gameboard.py    # Per-player board (5 bird slots)
-│   │   ├── game_state.py   # Turn tracking, player rotation, game-over logic
+│   │   ├── game_state.py   # GameState + MCTSGameState (serialization)
 │   │   ├── hand.py         # Player hand management
-│   │   ├── player.py       # HumanPlayer (CLI) and BotPlayer (policy-driven)
+│   │   ├── player.py       # Player, HumanPlayer (CLI), BotPlayer (policy-driven)
 │   │   └── tray.py         # Face-up bird display (3 slots)
 │   ├── rl/
-│   │   └── reinforcement_learning.py  # Policy ABC, RandomPolicy, State
+│   │   ├── policy.py       # Policy ABC, RandomPolicy, MCTSPolicy
+│   │   └── mcts.py         # Node and Edge classes for game tree
 │   ├── utilities/
-│   │   └── utils.py        # Tabular rendering
-│   └── game.py             # Game setup and play loop
-├── tests/                  # 80+ unit tests (unittest + pytest)
+│   │   ├── utils.py        # Terminal rendering helpers
+│   │   └── player_factory.py  # Player creation (avoids circular imports)
+│   └── game.py             # Game setup, turn loop, CLI entry point
+├── tests/                  # 157 unit tests (unittest + pytest)
 ├── data/
 │   ├── bird_data.csv       # Source bird data
 │   ├── bird_list.py        # Generated: 180 Bird objects
 │   └── generate_bird_list.py
 ```
 
-## Getting Started
-
-```bash
-# Install uv if you don't have it
-# https://docs.astral.sh/uv/getting-started/installation/
-
-# Sync dependencies (creates .venv automatically)
-uv sync
-
-# Run tests
-uv run python -m pytest
-
-# Play a game (2 bots, 10 turns each)
-uv run python -m src.game
-
-# Play with a human player (2 players, 1 human)
-uv run python -m src.game --num_players 2 --num_human 1
-```
-
 ## Architecture
 
 ### Game Engine
-- **Players** inherit from a base `Player` class. `HumanPlayer` takes CLI input; `BotPlayer` delegates decisions to a `Policy` object
+- **GameState** consolidates all game objects: bird deck, discard pile, tray, bird feeder, players, and turn/phase tracking
+- **Players** inherit from `Player`. `HumanPlayer` takes CLI input; `BotPlayer` delegates decisions to a `Policy` object
 - **Game loop** rotates through players, validates legal actions, executes the chosen action, and updates state until turns are exhausted
 - **Scoring** sums victory points of birds on each player's board
 
-### RL Components
-- **Policy** (ABC) maps game states to action probability distributions, with phase-specific methods for each decision point
-- **RandomPolicy** provides a uniform random baseline
-- **State** wraps the game state for policy consumption, tracking the current decision phase
+### RL / MCTS
+- **Policy** maps `(state, actions) → chosen action`. `RandomPolicy` picks uniformly; `MCTSPolicy` uses tree search
+- **MCTSPolicy** implements the full select → expand → playout → backpropagate loop:
+  - **Select**: traverse the tree via UCB1 to find a leaf node
+  - **Expand**: generate child nodes for each legal action (using `copy.deepcopy`)
+  - **Playout**: simulate the game to completion using `RandomPolicy` (cloned via `MCTSGameState.from_representation` for imperfect-information determinization)
+  - **Backpropagate**: walk parent pointers updating visit counts and rewards
+- **MCTSGameState** extends GameState with hashable `to_representation()` / `from_representation()` for state serialization, handling hidden information (opponent hands stored as counts)
 
-### MCTS (in progress, branch `47-implement-basic-mcts`)
-- **MCTSGameState** subclass with hashable `to_representation()` / `from_representation()` for game tree nodes
-- **Expectimax** tree structure: decision nodes (player choices) and chance nodes (stochastic outcomes)
-- **rhoUCT** outline for balancing exploration/exploitation with a stochastic environment model
-- 26 commits ahead of main with state representation, player factory, and policy refactoring
+## Roadmap
 
-## Open Issues
+See [GitHub Issues](https://github.com/keithgw/wingspan/issues) for the full backlog. Next milestones:
 
-See [GitHub Issues](https://github.com/keithgw/wingspan/issues) for the full backlog. Key items:
-
-- **#47** — Implement basic MCTS (core next milestone)
-- **#53** — Refactor play loop for mid-turn simulation
-- **#65** — Simplify Policy interface (remove phase dependency)
-- **#55, #57, #58** — Improve state model with card memory
-- **#19** — Turn zero draft decisions
+- **#74** — Self-play training framework with policy persistence
+- **#73** — Replace random playout policy with a learned policy
+- **#75** — Add a value network to evaluate positions without full playout
 
 ## References
 
