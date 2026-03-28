@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from data.bird_list import birds as bird_list
 from src.entities.player import BotPlayer, HumanPlayer
@@ -74,6 +74,20 @@ class TestWingspanGame(unittest.TestCase):
         player = game.game_state.get_players()[0]
         self.assertEqual(player.name, "Bot 1")
         self.assertIsInstance(player, BotPlayer)
+
+    def test_bot_policy_factory_used(self):
+        stub_policy = Mock()
+        game = WingspanGame(num_players=2, num_human=0, bot_policy_factory=lambda: stub_policy)
+        players = game.game_state.get_players()
+        for player in players:
+            self.assertIs(player.policy, stub_policy)
+
+    def test_bot_policy_factory_called_per_player(self):
+        factory = Mock(side_effect=[Mock(), Mock()])
+        game = WingspanGame(num_players=2, num_human=0, bot_policy_factory=factory)
+        players = game.game_state.get_players()
+        self.assertEqual(factory.call_count, 2)
+        self.assertIsNot(players[0].policy, players[1].policy)
 
 
 if __name__ == "__main__":
