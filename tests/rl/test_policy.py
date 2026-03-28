@@ -2,7 +2,7 @@ import unittest
 from io import StringIO
 from unittest.mock import Mock, patch
 
-from src.constants import CHOOSE_A_BIRD_TO_DRAW, CHOOSE_A_BIRD_TO_PLAY
+from src.constants import CHOOSE_A_BIRD_TO_DRAW, CHOOSE_A_BIRD_TO_PLAY, CHOOSE_ACTION
 from src.entities.game_state import MCTSGameState
 from src.game import WingspanGame
 from src.rl.mcts import Node
@@ -220,7 +220,7 @@ class TestExpand(unittest.TestCase):
         self.assertGreater(len(leaf.children), 0)
         for child in leaf.children:
             # Each child should have the turn ended (phase reset)
-            self.assertEqual(child.state.phase, "choose_action")
+            self.assertEqual(child.state.phase, CHOOSE_ACTION)
 
     def test_expand_choose_a_bird_to_draw(self):
         self.mcts_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
