@@ -60,7 +60,7 @@ python -m pytest
 python -m src.game
 
 # Play with a human player (2 players, 1 human)
-python -m src.game 2 1
+python -m src.game --num_players 2 --num_human 1
 ```
 
 No external dependencies beyond pytest for testing.
