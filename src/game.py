@@ -49,7 +49,7 @@ class WingspanGame:
         self.bird_deck = Deck()
         for bird in bird_list:
             self.bird_deck.add_card(bird)
-        self.bird_deck.shuffle_deck()
+        self.bird_deck.shuffle()
 
         # Initialize the players
         self.players = [None] * num_players

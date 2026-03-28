@@ -1,3 +1,4 @@
+from src.entities.bird import Bird
 from src.utilities.utils import render_bird_container
 
 
@@ -73,3 +74,20 @@ class Tray:
     def render(self):
         """Render the tray."""
         print(render_bird_container(bird_container=self.get_birds_in_tray(), capacity=self.capacity))
+
+    def to_representation(self):
+        """Return a frozenset of bird (points, food_cost) tuples with (0,0) for empty slots."""
+        missing_birds = self.capacity - self.get_count()
+        birds_to_represent = self.get_birds_in_tray() + [Bird("Placeholder", 0, 0)] * missing_birds
+        return frozenset(bird.to_representation() for bird in birds_to_represent)
+
+    @classmethod
+    def from_representation(cls, representation, deck):
+        """Reconstruct a Tray from a representation by drawing matching birds from the deck."""
+        capacity = len(representation)
+        tray = cls(capacity=capacity)
+        for bird_rep in representation:
+            if bird_rep != (0, 0):
+                bird = deck.remove_and_return_bird(lambda b, rep=bird_rep: b.to_representation() == rep)
+                tray.add_bird(bird)
+        return tray
