@@ -1,3 +1,4 @@
+import argparse
 from argparse import ArgumentParser
 
 from data.bird_list import birds as bird_list
@@ -197,9 +198,16 @@ if __name__ == "__main__":
         choices=["random", "mcts"],
         help="Bot policy: 'random' (fast) or 'mcts' (smarter, slower)",
     )
+
+    def positive_int(value):
+        ivalue = int(value)
+        if ivalue < 1:
+            raise argparse.ArgumentTypeError(f"must be at least 1, got {value}")
+        return ivalue
+
     parser.add_argument(
         "--num_simulations",
-        type=int,
+        type=positive_int,
         default=100,
         help="Number of MCTS simulations per decision (only used with --policy mcts)",
     )
