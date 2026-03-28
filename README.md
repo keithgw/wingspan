@@ -53,17 +53,21 @@ wingspan/
 ## Getting Started
 
 ```bash
+# Install uv if you don't have it
+# https://docs.astral.sh/uv/getting-started/installation/
+
+# Sync dependencies (creates .venv automatically)
+uv sync
+
 # Run tests
-python -m pytest
+uv run python -m pytest
 
 # Play a game (2 bots, 10 turns each)
-python -m src.game
+uv run python -m src.game
 
 # Play with a human player (2 players, 1 human)
-python -m src.game --num_players 2 --num_human 1
+uv run python -m src.game --num_players 2 --num_human 1
 ```
-
-No external dependencies beyond pytest for testing.
 
 ## Architecture
 

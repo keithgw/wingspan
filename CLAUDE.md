@@ -21,12 +21,15 @@ wingspan/
 
 ## Running
 ```bash
+# Sync dependencies (creates .venv)
+uv sync
+
 # Run tests
-python -m pytest
+uv run python -m pytest
 
 # Run a game (from repo root)
-python -m src.game          # default: 2 bots, 10 turns each
-python -m src.game 2 1      # 2 players, 1 human
+uv run python -m src.game          # default: 2 bots, 10 turns each
+uv run python -m src.game 2 1      # 2 players, 1 human
 ```
 
 ## Key Branches
