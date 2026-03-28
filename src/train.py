@@ -25,13 +25,27 @@ METRICS_FIELDS = [
 ]
 
 
-def _init_metrics_file(output_dir):
-    """Create the metrics CSV with headers."""
+def _ensure_metrics_file(output_dir):
+    """Create the metrics CSV with headers if it doesn't exist. Return path."""
     path = os.path.join(output_dir, METRICS_FILENAME)
-    with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=METRICS_FIELDS)
-        writer.writeheader()
+    if not os.path.exists(path):
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=METRICS_FIELDS)
+            writer.writeheader()
     return path
+
+
+def _get_last_iteration(metrics_path):
+    """Read the last iteration number from the metrics CSV, or 0 if empty."""
+    try:
+        with open(metrics_path) as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            if rows:
+                return int(rows[-1]["iteration"])
+    except (FileNotFoundError, KeyError):
+        pass
+    return 0
 
 
 def _append_metrics(path, row):
@@ -43,17 +57,27 @@ def _append_metrics(path, row):
 
 def train(args):
     """Run the training loop, logging metrics to CSV."""
-    policy = LinearPolicy()
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    # Resume from existing policy if available
+    latest_path = os.path.join(args.output_dir, "policy_latest.npz")
+    if os.path.exists(latest_path):
+        policy = LinearPolicy.load(latest_path)
+        print(f"Resuming from {latest_path}")
+    else:
+        policy = LinearPolicy()
+        print("Starting with fresh policy")
+
     runner = SelfPlayRunner()
     baseline = RandomPolicy()
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    metrics_path = _init_metrics_file(args.output_dir)
+    metrics_path = _ensure_metrics_file(args.output_dir)
+    start_iteration = _get_last_iteration(metrics_path)
 
     print(f"Training for {args.num_iterations} iterations, {args.games_per_iteration} games each")
     print(f"Metrics will be saved to {metrics_path}\n")
 
-    for iteration in range(1, args.num_iterations + 1):
+    for iteration in range(start_iteration + 1, start_iteration + args.num_iterations + 1):
         # Collect experience via self-play
         experiences, stats = runner.collect_experience(
             policy, num_games=args.games_per_iteration, num_turns=args.num_turns
