@@ -25,6 +25,15 @@ METRICS_FIELDS = [
 ]
 
 
+def _init_metrics_file(output_dir):
+    """Create (or overwrite) the metrics CSV with headers. Return path."""
+    path = os.path.join(output_dir, METRICS_FILENAME)
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=METRICS_FIELDS)
+        writer.writeheader()
+    return path
+
+
 def _ensure_metrics_file(output_dir):
     """Create the metrics CSV with headers if it doesn't exist. Return path."""
     path = os.path.join(output_dir, METRICS_FILENAME)
@@ -59,20 +68,23 @@ def train(args):
     """Run the training loop, logging metrics to CSV."""
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Resume from existing policy if available
-    latest_path = os.path.join(args.output_dir, "policy_latest.npz")
-    if os.path.exists(latest_path):
+    if args.resume:
+        latest_path = os.path.join(args.output_dir, "policy_latest.npz")
+        if not os.path.exists(latest_path):
+            print(f"No policy found at {latest_path}. Use --fresh to start from scratch.")
+            return
         policy = LinearPolicy.load(latest_path)
         print(f"Resuming from {latest_path}")
+        metrics_path = _ensure_metrics_file(args.output_dir)
+        start_iteration = _get_last_iteration(metrics_path)
     else:
         policy = LinearPolicy()
         print("Starting with fresh policy")
+        metrics_path = _init_metrics_file(args.output_dir)
+        start_iteration = 0
 
     runner = SelfPlayRunner()
     baseline = RandomPolicy()
-
-    metrics_path = _ensure_metrics_file(args.output_dir)
-    start_iteration = _get_last_iteration(metrics_path)
 
     print(f"Training for {args.num_iterations} iterations, {args.games_per_iteration} games each")
     print(f"Metrics will be saved to {metrics_path}\n")
@@ -211,6 +223,9 @@ if __name__ == "__main__":
     train_parser.add_argument("--eval_games", type=int, default=50)
     train_parser.add_argument("--save_every", type=int, default=10)
     train_parser.add_argument("--output_dir", type=str, default="models")
+    resume_group = train_parser.add_mutually_exclusive_group(required=True)
+    resume_group.add_argument("--resume", action="store_true", help="Resume from policy_latest.npz in output_dir")
+    resume_group.add_argument("--fresh", action="store_true", help="Start training from scratch")
 
     # Evaluate subcommand
     eval_parser = subparsers.add_parser("evaluate", help="Evaluate a trained policy")
