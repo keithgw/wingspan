@@ -25,7 +25,7 @@ class WingspanGame:
         num_human=DEFAULT_NUM_HUMAN,
         num_turns=DEFAULT_NUM_TURNS,
         num_starting_cards=DEFAULT_NUM_STARTING_CARDS,
-        bot_policy=None,
+        bot_policy_factory=None,
     ):
         if game_state is None:
             self.game_state = self._initialize_game_state(
@@ -33,12 +33,12 @@ class WingspanGame:
                 num_human=num_human,
                 num_turns=num_turns,
                 num_starting_cards=num_starting_cards,
-                bot_policy=bot_policy,
+                bot_policy_factory=bot_policy_factory,
             )
         else:
             self.game_state = game_state
 
-    def _initialize_game_state(self, num_players, num_human, num_turns, num_starting_cards, bot_policy):
+    def _initialize_game_state(self, num_players, num_human, num_turns, num_starting_cards, bot_policy_factory):
         # Validate inputs
         if num_human > num_players:
             raise ValueError("Number of human players cannot exceed total number of players.")
@@ -85,12 +85,13 @@ class WingspanGame:
                 )
             else:
                 player_name = f"Bot {player + 1}"
+                policy = bot_policy_factory() if bot_policy_factory else None
                 players[player] = create_bot_player(
                     name=player_name,
                     bird_hand=hand,
                     food_supply=food_supply,
                     num_turns_remaining=num_turns,
-                    policy=bot_policy,
+                    policy=policy,
                 )
 
         # Initialize the bird tray
@@ -205,17 +206,18 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    bot_policy = None
+    bot_policy_factory = None
     if args.policy == "mcts":
         from src.rl.policy import MCTSPolicy
 
-        bot_policy = MCTSPolicy(num_simulations=args.num_simulations)
+        num_sims = args.num_simulations
+        bot_policy_factory = lambda: MCTSPolicy(num_simulations=num_sims)  # noqa: E731
 
     game = WingspanGame(
         num_players=args.num_players,
         num_human=args.num_human,
         num_turns=args.num_turns,
         num_starting_cards=args.num_starting_cards,
-        bot_policy=bot_policy,
+        bot_policy_factory=bot_policy_factory,
     )
     game.play()
