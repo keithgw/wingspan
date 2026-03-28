@@ -122,6 +122,8 @@ class MCTSPolicy(Policy):
             if state.get_bird_deck().get_count() > 0:
                 choices.append("deck")
             return choices
+        else:
+            raise ValueError(f"Unexpected phase: {state.phase}")
 
     def _apply_action(self, state, action):
         """Clone the state and apply a single action, returning the new state."""
