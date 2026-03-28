@@ -10,11 +10,16 @@ Reinforcement learning agents for the board game Wingspan. The strategy is to:
 ```
 wingspan/
 ├── src/
+│   ├── constants.py      # Game phase constants
 │   ├── entities/         # Core game components (bird, deck, player, board, etc.)
-│   ├── rl/               # RL components (policy.py on MCTS branch, reinforcement_learning.py on main)
-│   ├── utilities/        # Rendering helpers
+│   ├── rl/
+│   │   ├── policy.py     # Policy ABC, RandomPolicy, MCTSPolicy (stubs)
+│   │   └── mcts.py       # Node, Edge classes for game tree
+│   ├── utilities/
+│   │   ├── utils.py      # Rendering helpers
+│   │   └── player_factory.py  # Player creation (avoids circular imports)
 │   └── game.py           # Main game loop orchestration
-├── tests/                # unittest-based test suite (98 tests, all passing on main)
+├── tests/                # unittest-based test suite (134 tests)
 ├── data/                 # Bird data: 180 species from CSV, generated into bird_list.py
 └── __init__.py
 ```
@@ -32,16 +37,20 @@ uv run python -m src.game                           # default: 2 bots, 10 turns 
 uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 human
 ```
 
-## Key Branches
-- `main` — stable game engine with RandomPolicy
-- `origin/47-implement-basic-mcts` — WIP MCTS implementation (26 commits ahead of main), includes state representation, MCTSGameState, player factory, rhoUCT outline
-
 ## Architecture Notes
+- **GameState** consolidates all game objects: bird_deck, discard_pile, tray, bird_feeder, players, phase
+- **MCTSGameState** extends GameState with `to_representation()`/`from_representation()` for hashable state serialization
 - **Players**: `HumanPlayer` (CLI input) and `BotPlayer` (policy-driven) inherit from `Player`
-- **Policies**: Abstract `Policy` base class; `RandomPolicy` implemented. MCTS branch outlines `rhoUCT`
+- **Policies**: `Policy.__call__(state, actions) → str`. `RandomPolicy` picks uniformly. `MCTSPolicy` has rhoUCT scaffold (expand/playout/backpropagate are stubs)
 - **Actions**: 3 of 4 actions implemented: play_a_bird, gain_food, draw_a_bird. Lay eggs NOT implemented
 - **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or special powers). Food is a single token type (real game has 5 types). No bonus cards, no end-of-round goals
-- **State representation**: MCTS branch adds `to_representation()` / `from_representation()` for hashable state vectors
+- **Entity serialization**: All entities have `to_representation()` returning hashable types; BirdHand, GameBoard, Tray have `from_representation()` for reconstruction
+
+## MCTS Development Frontier
+The `MCTSPolicy._expand()`, `._playout()`, and `._backpropagate()` methods are stubs. These are the next pieces to implement. Key design decisions (from issue #47):
+- Expectimax tree: decision nodes (player choices) and chance nodes (stochastic outcomes)
+- Handle stochasticity via simulation, not enumeration
+- rhoUCT = UCT + environment model
 
 ## Conventions
 - Python unittest framework, run with pytest
