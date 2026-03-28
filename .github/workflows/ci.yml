@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: .python-version
       - run: uv run ruff check .
       - run: uv run ruff format --check .
 
@@ -20,4 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: .python-version
       - run: uv run python -m pytest
