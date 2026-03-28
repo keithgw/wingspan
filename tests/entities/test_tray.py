@@ -134,22 +134,23 @@ class TestTray(unittest.TestCase):
         for bird in self.birds:
             self.tray.add_bird(bird)
         rep = self.tray.to_representation()
-        # Two birds share (3,1), so frozenset has 2 unique elements
-        self.assertEqual(rep, frozenset([(5, 2), (3, 1)]))
+        # Sorted tuple preserves duplicates: two birds share (3,1)
+        self.assertEqual(rep, ((3, 1), (3, 1), (5, 2)))
 
     def test_to_representation_partial(self):
         self.tray.add_bird(self.birds[0])
         rep = self.tray.to_representation()
-        self.assertIn(self.birds[0].to_representation(), rep)
-        self.assertIn((0, 0), rep)
+        self.assertEqual(len(rep), 3)
+        self.assertEqual(rep, ((0, 0), (0, 0), (5, 2)))
 
     def test_from_representation(self):
         deck = Deck()
         for bird in self.birds:
             deck.add_card(bird)
-        rep = frozenset([(5, 2), (0, 0), (0, 0)])
+        rep = ((0, 0), (0, 0), (5, 2))
         tray = Tray.from_representation(rep, deck)
         self.assertEqual(tray.get_count(), 1)
+        self.assertEqual(tray.capacity, 3)
         self.assertEqual(deck.get_count(), 2)
 
 

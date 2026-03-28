@@ -53,25 +53,23 @@ class TestGameBoard(unittest.TestCase):
         for _ in range(5):
             self.gameboard.add_bird(Bird("Osprey", 5, 1))
         rep = self.gameboard.to_representation()
-        # representation should preserve multiplicity: one slot per board capacity
-        self.assertEqual(len(rep), self.gameboard.capacity)
-        # all slots should correspond to the same bird (5, 1)
-        self.assertTrue(all(slot == (5, 1) for slot in rep))
+        self.assertEqual(len(rep), 5)
+        self.assertEqual(rep, ((5, 1),) * 5)
 
     def test_to_representation_partial(self):
         self.gameboard.add_bird(Bird("Osprey", 5, 1))
         rep = self.gameboard.to_representation()
-        self.assertIn((5, 1), rep)
-        self.assertIn((0, 0), rep)
+        self.assertEqual(len(rep), 5)
+        self.assertEqual(rep, ((0, 0), (0, 0), (0, 0), (0, 0), (5, 1)))
 
     def test_from_representation(self):
         deck = Deck()
         deck.add_card(Bird("Osprey", 5, 1))
         deck.add_card(Bird("Cardinal", 3, 2))
-        # frozenset: one bird + 4 empty slots
-        rep = frozenset([(5, 1), (0, 0)])
+        rep = ((0, 0), (0, 0), (0, 0), (0, 0), (5, 1))
         board = GameBoard.from_representation(rep, deck)
         self.assertEqual(len(board.get_birds()), 1)
+        self.assertEqual(board.capacity, 5)
         self.assertEqual(deck.get_count(), 1)
 
 

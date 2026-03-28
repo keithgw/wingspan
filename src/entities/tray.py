@@ -1,4 +1,3 @@
-from src.entities.bird import Bird
 from src.utilities.utils import render_bird_container
 
 
@@ -76,10 +75,10 @@ class Tray:
         print(render_bird_container(bird_container=self.get_birds_in_tray(), capacity=self.capacity))
 
     def to_representation(self):
-        """Return a frozenset of bird (points, food_cost) tuples with (0,0) for empty slots."""
+        """Return a sorted tuple of bird (points, food_cost) tuples with (0,0) for empty slots."""
         missing_birds = self.capacity - self.get_count()
-        birds_to_represent = self.get_birds_in_tray() + [Bird("Placeholder", 0, 0)] * missing_birds
-        return frozenset(bird.to_representation() for bird in birds_to_represent)
+        reps = [bird.to_representation() for bird in self.get_birds_in_tray()] + [(0, 0)] * missing_birds
+        return tuple(sorted(reps))
 
     @classmethod
     def from_representation(cls, representation, deck):

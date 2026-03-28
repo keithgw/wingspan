@@ -69,8 +69,8 @@ class BirdHand(Hand):
         self.remove_card(card_name)
 
     def to_representation(self):
-        """Return a frozenset of bird (points, food_cost) tuples."""
-        return frozenset(card.to_representation() for card in self.get_cards_in_hand())
+        """Return a sorted tuple of bird (points, food_cost) tuples."""
+        return tuple(sorted(card.to_representation() for card in self.get_cards_in_hand()))
 
     @classmethod
     def from_representation(cls, representation, bird_deck):

@@ -1,4 +1,3 @@
-from src.entities.bird import Bird
 from src.utilities.utils import render_bird_container
 
 
@@ -37,10 +36,10 @@ class GameBoard:
         return sum([bird.get_points() for bird in self.birds])
 
     def to_representation(self):
-        """Return a frozenset of bird (points, food_cost) tuples with (0,0) for empty slots."""
+        """Return a sorted tuple of bird (points, food_cost) tuples with (0,0) for empty slots."""
         open_spaces = self.capacity - len(self.birds)
-        birds_to_represent = list(self.birds) + [Bird("Placeholder", 0, 0)] * open_spaces
-        return frozenset(bird.to_representation() for bird in birds_to_represent)
+        reps = [bird.to_representation() for bird in self.birds] + [(0, 0)] * open_spaces
+        return tuple(sorted(reps))
 
     @classmethod
     def from_representation(cls, representation, deck):

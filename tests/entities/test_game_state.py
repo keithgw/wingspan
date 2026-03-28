@@ -93,21 +93,19 @@ class TestMCTSGameState(unittest.TestCase):
     def test_represent_player_full(self):
         player = Mock()
         player.get_food_supply.return_value.to_representation.return_value = 3
-        player.get_game_board.return_value.to_representation.return_value = frozenset([(0, 0)])
-        player.get_bird_hand.return_value.to_representation.return_value = frozenset([(5, 1), (3, 1)])
+        player.get_game_board.return_value.to_representation.return_value = ((0, 0),)
+        player.get_bird_hand.return_value.to_representation.return_value = ((3, 1), (5, 1))
         rep = self.state._represent_player(player, full=True)
-        expected = frozenset(
-            [("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", frozenset([(5, 1), (3, 1)]))]
-        )
+        expected = frozenset([("food_supply", 3), ("game_board", ((0, 0),)), ("hand", ((3, 1), (5, 1)))])
         self.assertEqual(rep, expected)
 
     def test_represent_player_partial(self):
         player = Mock()
         player.get_food_supply.return_value.to_representation.return_value = 3
-        player.get_game_board.return_value.to_representation.return_value = frozenset([(0, 0)])
+        player.get_game_board.return_value.to_representation.return_value = ((0, 0),)
         player.get_bird_hand.return_value.get_count.return_value = 2
         rep = self.state._represent_player(player, full=False)
-        expected = frozenset([("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", 2)])
+        expected = frozenset([("food_supply", 3), ("game_board", ((0, 0),)), ("hand", 2)])
         self.assertEqual(rep, expected)
 
     def test_get_opponents(self):
@@ -128,7 +126,7 @@ class TestMCTSGameState(unittest.TestCase):
         hand = BirdHand()
         deck = Deck()
         deck.add_card(Bird("bird", 1, 1))
-        rep = {"food_supply": 10, "game_board": frozenset([(1, 1), (0, 0)])}
+        rep = {"food_supply": 10, "game_board": ((0, 0), (1, 1))}
         player = self.state._construct_player(
             hand=hand, representation=rep, deck=deck, game_turn=1, num_turns=10, num_players=2, name="test"
         )
@@ -139,9 +137,9 @@ class TestMCTSGameState(unittest.TestCase):
         self.state.num_turns = 10
         self.state.game_turn = 5
         self.state.phase = "choose_action"
-        self.state.tray.to_representation.return_value = frozenset([(1, 1), (1, 2), (3, 1)])
+        self.state.tray.to_representation.return_value = ((1, 1), (1, 2), (3, 1))
         self.state.bird_feeder.to_representation.return_value = 5
-        player_rep = frozenset([("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", 2)])
+        player_rep = frozenset([("food_supply", 3), ("game_board", ((0, 0),)), ("hand", 2)])
 
         with patch.multiple(
             self.state,
@@ -158,6 +156,11 @@ class TestMCTSGameState(unittest.TestCase):
         self.assertEqual(rep_dict["bird_deck"], 20)
 
     def test_from_representation_round_trip(self):
+        # Board capacity=5: 0 birds + 5 empty. Tray capacity=3: 3 birds.
+        # 180 total birds: 3 tray + 2 current hand + 2+2 opponent hands + 20 deck + 151 discard = 180
+        board_rep = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
+        tray_rep = ((1, 1), (1, 2), (3, 1))
+        hand_rep = ((3, 1), (5, 1))
         rep = frozenset(
             [
                 ("num_turns", 10),
@@ -165,19 +168,17 @@ class TestMCTSGameState(unittest.TestCase):
                 ("phase", "choose_action"),
                 ("bird_deck", 20),
                 ("discard_pile", 151),
-                ("tray", frozenset([(1, 1), (1, 2), (3, 1)])),
+                ("tray", tray_rep),
                 ("bird_feeder", 5),
                 (
                     "current_player",
-                    frozenset(
-                        [("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", frozenset([(5, 1), (3, 1)]))]
-                    ),
+                    frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", hand_rep)]),
                 ),
                 (
                     "opponents",
                     (
-                        frozenset([("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", 2)]),
-                        frozenset([("food_supply", 3), ("game_board", frozenset([(0, 0)])), ("hand", 2)]),
+                        frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", 2)]),
+                        frozenset([("food_supply", 3), ("game_board", board_rep), ("hand", 2)]),
                     ),
                 ),
             ]

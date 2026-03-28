@@ -127,16 +127,16 @@ class TestBirdHand(unittest.TestCase):
         for bird in self.birds:
             self.hand.add_card(bird, bird.get_name())
         rep = self.hand.to_representation()
-        self.assertEqual(rep, frozenset([(5, 2), (3, 1), (4, 2)]))
+        self.assertEqual(rep, tuple(sorted([(5, 2), (3, 1), (4, 2)])))
 
     def test_to_representation_empty(self):
-        self.assertEqual(self.hand.to_representation(), frozenset())
+        self.assertEqual(self.hand.to_representation(), ())
 
     def test_from_representation(self):
         deck = Deck()
         for bird in self.birds:
             deck.add_card(bird)
-        rep = frozenset([(5, 2), (3, 1)])
+        rep = tuple(sorted([(5, 2), (3, 1)]))
         hand = BirdHand.from_representation(rep, deck)
         self.assertEqual(hand.get_count(), 2)
         self.assertEqual(deck.get_count(), 1)
