@@ -53,8 +53,10 @@ class TestGameBoard(unittest.TestCase):
         for _ in range(5):
             self.gameboard.add_bird(Bird("Osprey", 5, 1))
         rep = self.gameboard.to_representation()
-        self.assertEqual(len(rep), 1)  # all same bird → single element frozenset
-        self.assertIn((5, 1), rep)
+        # representation should preserve multiplicity: one slot per board capacity
+        self.assertEqual(len(rep), self.gameboard.capacity)
+        # all slots should correspond to the same bird (5, 1)
+        self.assertTrue(all(slot == (5, 1) for slot in rep))
 
     def test_to_representation_partial(self):
         self.gameboard.add_bird(Bird("Osprey", 5, 1))
