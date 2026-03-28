@@ -138,6 +138,8 @@ class MCTSPolicy(Policy):
                 new_state.set_phase(CHOOSE_A_BIRD_TO_PLAY)
             elif action == "draw_a_bird":
                 new_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
+            else:
+                raise ValueError(f"Unexpected action '{action}' for phase {state.phase}")
         elif state.phase == CHOOSE_A_BIRD_TO_PLAY:
             food_cost = player.bird_hand.get_card(action).get_food_cost()
             player.food_supply.decrement(food_cost)
@@ -149,6 +151,8 @@ class MCTSPolicy(Policy):
             else:
                 player.bird_hand.draw_bird_from_tray(new_state.get_tray(), action)
             new_state.end_player_turn(player)
+        else:
+            raise ValueError(f"Unexpected phase: {state.phase}")
 
         return new_state
 
