@@ -32,6 +32,9 @@ class TestFoodSupply(unittest.TestCase):
         self.assertTrue(self.food_supply.can_play_bird(equal_cost_bird))
         self.assertFalse(self.food_supply.can_play_bird(more_expensive_bird))
 
+    def test_to_representation(self):
+        self.assertEqual(self.food_supply.to_representation(), self.initial_amount)
+
     def test_render(self):
         with patch("sys.stdout", new=StringIO()) as fake_out:
             self.food_supply.render()

@@ -37,6 +37,14 @@ class TestBirdFeeder(unittest.TestCase):
         with self.assertRaises(BirdFeeder.NotEmptyError):
             self.bird_feeder.reroll()
 
+    def test_init_with_food_count(self):
+        feeder = BirdFeeder(food_count=3)
+        self.assertEqual(feeder.food_count, 3)
+
+    def test_to_representation(self):
+        self.bird_feeder.food_count = 3
+        self.assertEqual(self.bird_feeder.to_representation(), 3)
+
     def test_render(self):
         self.bird_feeder.food_count = 3
         with patch("sys.stdout", new=StringIO()) as fake_out:

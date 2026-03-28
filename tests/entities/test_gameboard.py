@@ -3,6 +3,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from src.entities.bird import Bird
+from src.entities.deck import Deck
 from src.entities.gameboard import GameBoard
 
 
@@ -47,6 +48,29 @@ class TestGameBoard(unittest.TestCase):
         # check that get_score returns the sum of the scores of the birds on the game board
         self.gameboard.add_bird(self.mock_card)
         self.assertEqual(self.gameboard.get_score(), self.mock_card.get_points())
+
+    def test_to_representation_full(self):
+        for _ in range(5):
+            self.gameboard.add_bird(Bird("Osprey", 5, 1))
+        rep = self.gameboard.to_representation()
+        self.assertEqual(len(rep), 5)
+        self.assertEqual(rep, ((5, 1),) * 5)
+
+    def test_to_representation_partial(self):
+        self.gameboard.add_bird(Bird("Osprey", 5, 1))
+        rep = self.gameboard.to_representation()
+        self.assertEqual(len(rep), 5)
+        self.assertEqual(rep, ((0, 0), (0, 0), (0, 0), (0, 0), (5, 1)))
+
+    def test_from_representation(self):
+        deck = Deck()
+        deck.add_card(Bird("Osprey", 5, 1))
+        deck.add_card(Bird("Cardinal", 3, 2))
+        rep = ((0, 0), (0, 0), (0, 0), (0, 0), (5, 1))
+        board = GameBoard.from_representation(rep, deck)
+        self.assertEqual(len(board.get_birds()), 1)
+        self.assertEqual(board.capacity, 5)
+        self.assertEqual(deck.get_count(), 1)
 
 
 if __name__ == "__main__":

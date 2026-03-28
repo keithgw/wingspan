@@ -80,6 +80,18 @@ class TestHand(unittest.TestCase):
             mock_render.assert_called_once_with(bird_container=self.hand.get_card_names_in_hand())
 
 
+class TestHandGetCount(unittest.TestCase):
+    def test_get_count_empty(self):
+        hand = Hand()
+        self.assertEqual(hand.get_count(), 0)
+
+    def test_get_count_with_cards(self):
+        hand = Hand()
+        hand.add_card(Bird("Osprey", 5, 2), "Osprey")
+        hand.add_card(Bird("Cardinal", 3, 1), "Cardinal")
+        self.assertEqual(hand.get_count(), 2)
+
+
 class TestBirdHand(unittest.TestCase):
     def setUp(self):
         self.hand = BirdHand()
@@ -110,6 +122,24 @@ class TestBirdHand(unittest.TestCase):
         self.hand.add_card(Bird(card_name, 5, 2), card_name)
         self.hand.tuck_card(card_name)
         self.assertNotIn(card_name, self.hand.cards)
+
+    def test_to_representation(self):
+        for bird in self.birds:
+            self.hand.add_card(bird, bird.get_name())
+        rep = self.hand.to_representation()
+        self.assertEqual(rep, tuple(sorted([(5, 2), (3, 1), (4, 2)])))
+
+    def test_to_representation_empty(self):
+        self.assertEqual(self.hand.to_representation(), ())
+
+    def test_from_representation(self):
+        deck = Deck()
+        for bird in self.birds:
+            deck.add_card(bird)
+        rep = tuple(sorted([(5, 2), (3, 1)]))
+        hand = BirdHand.from_representation(rep, deck)
+        self.assertEqual(hand.get_count(), 2)
+        self.assertEqual(deck.get_count(), 1)
 
 
 if __name__ == "__main__":

@@ -23,5 +23,9 @@ class FoodSupply:
         """
         return self.amount >= bird.get_food_cost()
 
+    def to_representation(self):
+        """Return the food supply amount for use in state representations."""
+        return self.amount
+
     def render(self):
         print("Food supply: " + str(self.amount))

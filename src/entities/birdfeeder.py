@@ -1,6 +1,6 @@
 class BirdFeeder:
-    def __init__(self):
-        self.food_count = 0
+    def __init__(self, food_count=0):
+        self.food_count = food_count
 
     class NotEmptyError(Exception):
         pass
@@ -20,6 +20,10 @@ class BirdFeeder:
                 self.reroll()
         else:
             self.reroll()
+
+    def to_representation(self):
+        """Return the food count for use in state representations."""
+        return self.food_count
 
     def render(self):
         print("Bird Feeder: " + str(self.food_count))

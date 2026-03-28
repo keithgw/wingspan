@@ -25,16 +25,33 @@ class TestDeck(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.deck.draw_card()
 
-    def test_shuffle_deck(self):
+    def test_shuffle(self):
         # Create a large, but simple deck to make failure due to shuffling returning the same exact deck unlikely.
         for letter in "abcdefghijkl":
             self.deck.add_card(letter)
         original_deck = self.deck.cards.copy()
-        self.deck.shuffle_deck()
+        self.deck.shuffle()
         # Check that the deck has the same cards after shuffling
         self.assertEqual(set(self.deck.cards), set(original_deck))
         # Check that the order of cards has changed (most of the time)
         self.assertNotEqual(self.deck.cards, original_deck)
+
+    def test_prepare_deck(self):
+        cards = [self.birds[0], self.birds[1]]
+        self.deck.prepare_deck(cards)
+        self.assertEqual(self.deck.get_count(), 2)
+
+    def test_remove_and_return_bird(self):
+        for bird in self.birds:
+            self.deck.add_card(bird)
+        bird = self.deck.remove_and_return_bird(lambda b: b.get_name() == "Osprey")
+        self.assertEqual(bird.get_name(), "Osprey")
+        self.assertEqual(self.deck.get_count(), 1)
+
+    def test_remove_and_return_bird_no_match(self):
+        self.deck.add_card(self.birds[0])
+        with self.assertRaises(ValueError):
+            self.deck.remove_and_return_bird(lambda b: b.get_name() == "Nonexistent")
 
 
 if __name__ == "__main__":

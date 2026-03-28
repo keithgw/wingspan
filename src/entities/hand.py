@@ -23,6 +23,10 @@ class Hand:
         """Public method that returns card names in hand"""
         return list(self.cards.keys())
 
+    def get_count(self):
+        """Get the number of cards in the hand."""
+        return len(self.cards)
+
     def remove_card(self, card_name):
         """Remove a card from the hand and return it"""
         if card_name not in self.cards:
@@ -63,3 +67,16 @@ class BirdHand(Hand):
     def tuck_card(self, card_name):
         """Tuck a card from the hand"""
         self.remove_card(card_name)
+
+    def to_representation(self):
+        """Return a sorted tuple of bird (points, food_cost) tuples."""
+        return tuple(sorted(card.to_representation() for card in self.get_cards_in_hand()))
+
+    @classmethod
+    def from_representation(cls, representation, bird_deck):
+        """Reconstruct a BirdHand from a representation by drawing matching birds from the deck."""
+        hand = cls()
+        for bird_rep in representation:
+            bird = bird_deck.remove_and_return_bird(lambda b, rep=bird_rep: b.to_representation() == rep)
+            hand.add_card(card=bird, card_name=bird.get_name())
+        return hand

@@ -130,6 +130,29 @@ class TestTray(unittest.TestCase):
                 capacity=self.tray.capacity,
             )
 
+    def test_to_representation_full(self):
+        for bird in self.birds:
+            self.tray.add_bird(bird)
+        rep = self.tray.to_representation()
+        # Sorted tuple preserves duplicates: two birds share (3,1)
+        self.assertEqual(rep, ((3, 1), (3, 1), (5, 2)))
+
+    def test_to_representation_partial(self):
+        self.tray.add_bird(self.birds[0])
+        rep = self.tray.to_representation()
+        self.assertEqual(len(rep), 3)
+        self.assertEqual(rep, ((0, 0), (0, 0), (5, 2)))
+
+    def test_from_representation(self):
+        deck = Deck()
+        for bird in self.birds:
+            deck.add_card(bird)
+        rep = ((0, 0), (0, 0), (5, 2))
+        tray = Tray.from_representation(rep, deck)
+        self.assertEqual(tray.get_count(), 1)
+        self.assertEqual(tray.capacity, 3)
+        self.assertEqual(deck.get_count(), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

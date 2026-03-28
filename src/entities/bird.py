@@ -13,6 +13,10 @@ class Bird:
     def get_food_cost(self):
         return self.food_cost
 
+    def to_representation(self):
+        """Return (points, food_cost) tuple for use in state representations."""
+        return (self.points, self.food_cost)
+
     def activate(self):
         # Add code for activation behavior here
         pass

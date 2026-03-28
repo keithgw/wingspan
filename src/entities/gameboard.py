@@ -34,3 +34,20 @@ class GameBoard:
         Returns the score of the game board.
         """
         return sum([bird.get_points() for bird in self.birds])
+
+    def to_representation(self):
+        """Return a sorted tuple of bird (points, food_cost) tuples with (0,0) for empty slots."""
+        open_spaces = self.capacity - len(self.birds)
+        reps = [bird.to_representation() for bird in self.birds] + [(0, 0)] * open_spaces
+        return tuple(sorted(reps))
+
+    @classmethod
+    def from_representation(cls, representation, deck):
+        """Reconstruct a GameBoard from a representation by drawing matching birds from the deck."""
+        capacity = len(representation)
+        gameboard = cls(capacity=capacity)
+        for bird_rep in representation:
+            if bird_rep != (0, 0):
+                bird = deck.remove_and_return_bird(lambda b, rep=bird_rep: b.to_representation() == rep)
+                gameboard.add_bird(bird)
+        return gameboard
