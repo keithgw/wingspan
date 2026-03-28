@@ -1,4 +1,3 @@
-import sys
 import unittest
 from io import StringIO
 from unittest.mock import Mock, patch
@@ -84,11 +83,8 @@ class TestMCTSPolicyPlayout(unittest.TestCase):
     def test_playout_suppresses_stdout(self):
         node = Node(state=self.mcts_state)
         captured = StringIO()
-        sys.stdout = captured
-        try:
+        with patch("sys.stdout", captured):
             self.policy._playout(node)
-        finally:
-            sys.stdout = sys.__stdout__
         self.assertEqual(captured.getvalue(), "")
 
 
