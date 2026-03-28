@@ -2,6 +2,8 @@ import random
 
 
 class Deck:
+    """An ordered collection of cards. Draws from the top (index 0)."""
+
     def __init__(self, cards=None):
         if cards is None:
             self.cards = []
@@ -31,9 +33,9 @@ class Deck:
         raise ValueError("No bird in the deck meets the condition")
 
     def draw_card(self):
+        """Draw and return the top card. Raises ValueError if empty."""
         if self.get_count() == 0:
             raise ValueError("Deck is empty")
-        # cards will be drawn from the top of the deck
         return self.cards.pop(0)
 
     def shuffle(self):
