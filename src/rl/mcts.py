@@ -10,12 +10,6 @@ class Node:
         self.num_visits = 0
         self.total_reward = 0
 
-    def is_fully_expanded(self):
-        return len(self.untried_actions) == 0
-
-    def is_terminal(self):
-        return self.state.is_terminal()
-
     def get_ucb1(self, c=1.4142):
         if self.num_visits == 0:
             return float("inf")
