@@ -28,8 +28,8 @@ uv sync
 uv run python -m pytest
 
 # Run a game (from repo root)
-uv run python -m src.game          # default: 2 bots, 10 turns each
-uv run python -m src.game 2 1      # 2 players, 1 human
+uv run python -m src.game                           # default: 2 bots, 10 turns each
+uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 human
 ```
 
 ## Key Branches
