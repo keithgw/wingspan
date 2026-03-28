@@ -100,6 +100,9 @@ class MCTSPolicy(Policy):
             return leaf
 
         actions = self._get_legal_actions(leaf.state)
+        if not actions:
+            return leaf
+
         for action in actions:
             child_state = self._apply_action(leaf.state, action)
             child = Node(state=child_state, parent=leaf, action=action)
