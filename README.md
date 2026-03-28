@@ -43,7 +43,7 @@ wingspan/
 │   ├── utilities/
 │   │   └── utils.py        # Tabular rendering
 │   └── game.py             # Game setup and play loop
-├── tests/                  # 98 unit tests (unittest + pytest)
+├── tests/                  # 80+ unit tests (unittest + pytest)
 ├── data/
 │   ├── bird_data.csv       # Source bird data
 │   ├── bird_list.py        # Generated: 180 Bird objects
