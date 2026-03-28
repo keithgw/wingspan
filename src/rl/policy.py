@@ -1,4 +1,5 @@
 import contextlib
+import copy
 import io
 
 import numpy as np
@@ -92,8 +93,68 @@ class MCTSPolicy(Policy):
         return node
 
     def _expand(self, leaf):
-        """Expand the leaf node by generating children."""
-        raise NotImplementedError
+        """Expand the leaf node by generating one child per legal action. Return a random child."""
+        from src.rl.mcts import Node
+
+        if leaf.state.is_game_over():
+            return leaf
+
+        actions = self._get_legal_actions(leaf.state)
+        if not actions:
+            return leaf
+
+        for action in actions:
+            child_state = self._apply_action(leaf.state, action)
+            child = Node(state=child_state, parent=leaf, action=action)
+            leaf.children.append(child)
+
+        return leaf.children[np.random.randint(len(leaf.children))]
+
+    def _get_legal_actions(self, state):
+        """Enumerate legal actions based on the current phase."""
+        player = state.get_current_player()
+        if state.phase == CHOOSE_ACTION:
+            return player._enumerate_legal_actions(state.get_tray(), state.get_bird_deck())
+        elif state.phase == CHOOSE_A_BIRD_TO_PLAY:
+            return player._enumerate_playable_birds()
+        elif state.phase == CHOOSE_A_BIRD_TO_DRAW:
+            choices = list(state.get_tray().see_birds_in_tray())
+            if state.get_bird_deck().get_count() > 0:
+                choices.append("deck")
+            return choices
+        else:
+            raise ValueError(f"Unexpected phase: {state.phase}")
+
+    def _apply_action(self, state, action):
+        """Clone the state and apply a single action, returning the new state."""
+        new_state = copy.deepcopy(state)
+        player = new_state.get_current_player()
+
+        if state.phase == CHOOSE_ACTION:
+            if action == "gain_food":
+                player.gain_food(new_state.get_bird_feeder())
+                new_state.end_player_turn(player)
+            elif action == "play_a_bird":
+                new_state.set_phase(CHOOSE_A_BIRD_TO_PLAY)
+            elif action == "draw_a_bird":
+                new_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
+            else:
+                raise ValueError(f"Unexpected action '{action}' for phase {state.phase}")
+        elif state.phase == CHOOSE_A_BIRD_TO_PLAY:
+            food_cost = player.bird_hand.get_card(action).get_food_cost()
+            player.food_supply.decrement(food_cost)
+            player.bird_hand.play_bird(action, player.game_board)
+            new_state.end_player_turn(player)
+        elif state.phase == CHOOSE_A_BIRD_TO_DRAW:
+            if action == "deck":
+                player.bird_hand.draw_card_from_deck(new_state.get_bird_deck())
+            else:
+                player.bird_hand.draw_bird_from_tray(new_state.get_tray(), action)
+            new_state.end_player_turn(player)
+        else:
+            raise ValueError(f"Unexpected phase: {state.phase}")
+
+        return new_state
 
     def _playout(self, node):
         """Simulate a game from this node to completion using random play."""
@@ -134,8 +195,11 @@ class MCTSPolicy(Policy):
         return 1.0 if num_winners == 1 else 0.5
 
     def _backpropagate(self, node, reward):
-        """Propagate reward up the tree."""
-        raise NotImplementedError
+        """Propagate reward up the tree, updating visits and rewards."""
+        while node is not None:
+            node.num_visits += 1
+            node.total_reward += reward
+            node = node.parent
 
     def _run_simulations(self, root, num_simulations):
         for _ in range(num_simulations):
