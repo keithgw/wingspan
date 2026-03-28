@@ -1,3 +1,6 @@
+import contextlib
+import io
+
 import numpy as np
 
 from src.constants import CHOOSE_A_BIRD_TO_DRAW, CHOOSE_A_BIRD_TO_PLAY, CHOOSE_ACTION
@@ -42,6 +45,7 @@ class MCTSPolicy(Policy):
         super().__init__()
         self.num_simulations = num_simulations
         self.root = None
+        self._mcts_player_index = None
 
     def _rhoUCT(self, state, actions):
         """UCT with environment model (rho). Returns max_a[Q(s, a)]."""
@@ -50,6 +54,9 @@ class MCTSPolicy(Policy):
 
         mcts_state = MCTSGameState.from_game_state(state)
         root = Node(state=mcts_state)
+
+        # Track which player we're optimizing for
+        self._mcts_player_index = state.game_turn % state.num_players
 
         # TODO: implement subtree reuse by comparing state representations
         # (requires Node.__eq__/__hash__ based on state.to_representation())
@@ -89,8 +96,42 @@ class MCTSPolicy(Policy):
         raise NotImplementedError
 
     def _playout(self, node):
-        """Simulate a game from this node to completion."""
-        raise NotImplementedError
+        """Simulate a game from this node to completion using random play."""
+        from src.entities.game_state import MCTSGameState
+
+        # Clone state via determinization (creates BotPlayers with RandomPolicy)
+        sim_state = MCTSGameState.from_representation(node.state.to_representation())
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            # Complete mid-turn action if needed
+            current_player = sim_state.get_current_player()
+            if sim_state.phase == CHOOSE_A_BIRD_TO_PLAY:
+                current_player.play_a_bird(sim_state)
+                sim_state.end_player_turn(player=current_player)
+            elif sim_state.phase == CHOOSE_A_BIRD_TO_DRAW:
+                current_player.draw_a_bird(sim_state)
+                sim_state.end_player_turn(player=current_player)
+
+            # Run game to completion
+            while not sim_state.is_game_over():
+                current_player = sim_state.get_current_player()
+                action = current_player.request_action(game_state=sim_state)
+                current_player.take_action(action=action, game_state=sim_state)
+                sim_state.end_player_turn(player=current_player)
+
+        return self._compute_reward(sim_state)
+
+    def _compute_reward(self, sim_state):
+        """Compute reward from the MCTS player's perspective. Returns 1.0/0.5/0.0."""
+        scores = [player.get_score() for player in sim_state.get_players()]
+        mcts_score = scores[self._mcts_player_index]
+        max_score = max(scores)
+
+        if mcts_score < max_score:
+            return 0.0
+
+        num_winners = sum(1 for s in scores if s == max_score)
+        return 1.0 if num_winners == 1 else 0.5
 
     def _backpropagate(self, node, reward):
         """Propagate reward up the tree."""
