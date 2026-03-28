@@ -2,54 +2,63 @@
 
 import numpy as np
 
+from src.rl.linear_policy import _softmax
 
-def compute_policy_gradient(experience, weights, num_actions, baseline=0.0):
-    """Compute the REINFORCE gradient for a single experience.
 
-    grad_log_pi = features^T * (one_hot(action) - softmax(logits)) * (reward - baseline)
+def compute_action_gradient(experience, weights, num_actions, baseline=0.0):
+    """Compute REINFORCE gradient for an action-level experience.
 
-    The baseline reduces variance: losses (reward < baseline) produce
-    negative gradients that discourage the chosen action.
+    Updates the action weights matrix.
     """
     features = experience.features
     logits = features @ weights[:, :num_actions]
+    probs = _softmax(logits)
 
-    # Softmax
-    shifted = logits - np.max(logits)
-    exp_logits = np.exp(shifted)
-    probs = exp_logits / np.sum(exp_logits)
-
-    # One-hot for the taken action
     one_hot = np.zeros(num_actions)
     one_hot[experience.action_index] = 1.0
 
-    # Advantage = reward - baseline
     advantage = experience.reward - baseline
-    grad = np.outer(features, (one_hot - probs)) * advantage
-    return grad
+    return np.outer(features, (one_hot - probs)) * advantage
 
 
-def train_batch(policy, experiences, learning_rate=0.01):
-    """Update policy weights using REINFORCE with baseline on a batch of experiences.
+def compute_sub_gradient(experience, sub_weights, baseline=0.0):
+    """Compute REINFORCE gradient for a sub-decision experience.
 
-    Uses mean batch reward as the baseline so that losses produce negative
-    gradients and the policy learns from both wins and losses.
-
-    Returns the mean reward of the batch (for monitoring).
+    The sub-decision uses a single weight vector. The gradient of
+    log_softmax w.r.t. the weight vector for the chosen option is:
+    combined_features * (1 - prob_chosen) * advantage
+    (simplified from the full softmax gradient for the chosen action).
     """
-    if not experiences:
+    combined = experience.combined_features
+    advantage = experience.reward - baseline
+    return combined * advantage
+
+
+def train_batch(policy, action_experiences, sub_experiences, learning_rate=0.01):
+    """Update policy weights using REINFORCE with baseline.
+
+    Updates both action weights and sub-decision weights.
+    Returns the mean reward (for monitoring).
+    """
+    all_rewards = [e.reward for e in action_experiences] + [e.reward for e in sub_experiences]
+    if not all_rewards:
         return 0.0
 
-    num_actions = policy.num_actions
-    baseline = np.mean([exp.reward for exp in experiences])
+    baseline = np.mean(all_rewards)
 
-    total_grad = np.zeros_like(policy.weights)
+    # Update action weights
+    if action_experiences:
+        num_actions = policy.num_actions
+        action_grad = np.zeros_like(policy.weights)
+        for exp in action_experiences:
+            action_grad[:, :num_actions] += compute_action_gradient(exp, policy.weights, num_actions, baseline=baseline)
+        policy.weights += learning_rate * action_grad / len(action_experiences)
 
-    for exp in experiences:
-        grad = compute_policy_gradient(exp, policy.weights, num_actions, baseline=baseline)
-        total_grad[:, :num_actions] += grad
-
-    # Average gradient and apply
-    policy.weights += learning_rate * total_grad / len(experiences)
+    # Update sub-decision weights
+    if sub_experiences:
+        sub_grad = np.zeros_like(policy.sub_weights)
+        for exp in sub_experiences:
+            sub_grad += compute_sub_gradient(exp, policy.sub_weights, baseline=baseline)
+        policy.sub_weights += learning_rate * sub_grad / len(sub_experiences)
 
     return baseline

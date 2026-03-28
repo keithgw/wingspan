@@ -6,41 +6,73 @@ from collections import namedtuple
 
 import numpy as np
 
-from src.rl.featurizer import ACTION_INDEX, featurize
+from src.rl.featurizer import ACTION_INDEX, featurize, featurize_option
 from src.rl.policy import Policy
 
-Experience = namedtuple("Experience", ["features", "action_index", "reward"])
+# Action-level experience (CHOOSE_ACTION phase)
+ActionExperience = namedtuple("ActionExperience", ["features", "action_index", "reward"])
+
+# Sub-decision experience (which bird to play/draw)
+SubExperience = namedtuple("SubExperience", ["combined_features", "action_index", "num_options", "reward"])
 
 
 class LoggingPolicy(Policy):
-    """Wraps a policy to log (features, canonical_action_index) for CHOOSE_ACTION decisions only.
+    """Wraps a policy to log decisions for training.
 
-    Sub-decisions (which bird to play/draw) are delegated but not logged,
-    since the linear model handles them uniformly and they add noise.
+    Logs action-level choices (CHOOSE_ACTION) and sub-decisions
+    (which bird to play/draw) separately, since they use different
+    weight vectors.
     """
 
     def __init__(self, inner_policy):
         self.inner_policy = inner_policy
-        self.log = []  # list of (features, canonical_action_index)
+        self.action_log = []  # (features, canonical_action_index)
+        self.sub_log = []  # (combined_features_list, chosen_index)
 
     def _policy_choose_action(self, state, legal_actions):
         features = featurize(state)
         chosen = self.inner_policy(state, legal_actions)
-        self.log.append((features, ACTION_INDEX[chosen]))
+        self.action_log.append((features, ACTION_INDEX[chosen]))
+        return chosen
+
+    def _log_sub_decision(self, state, options):
+        """Log a sub-decision and return the chosen option."""
+        chosen = self.inner_policy(state, options)
+        chosen_index = options.index(chosen)
+
+        # Build combined features for each option
+        state_features = featurize(state)
+        combined_list = []
+        for option_name in options:
+            option_features = featurize_option(state, option_name)
+            combined_list.append(np.concatenate([state_features, option_features]))
+
+        self.sub_log.append((combined_list, chosen_index))
         return chosen
 
     def _policy_choose_a_bird_to_play(self, state, playable_birds):
-        return self.inner_policy(state, playable_birds)
+        return self._log_sub_decision(state, playable_birds)
 
     def _policy_choose_a_bird_to_draw(self, state, valid_choices):
-        return self.inner_policy(state, valid_choices)
+        return self._log_sub_decision(state, valid_choices)
 
     def assign_rewards(self, reward):
-        """Convert logged decisions into Experience tuples with the given reward."""
-        return [Experience(features=f, action_index=a, reward=reward) for f, a in self.log]
+        """Convert logged decisions into experience tuples."""
+        action_exps = [ActionExperience(features=f, action_index=a, reward=reward) for f, a in self.action_log]
+        sub_exps = [
+            SubExperience(
+                combined_features=combined_list[chosen_idx],
+                action_index=chosen_idx,
+                num_options=len(combined_list),
+                reward=reward,
+            )
+            for combined_list, chosen_idx in self.sub_log
+        ]
+        return action_exps, sub_exps
 
     def clear(self):
-        self.log = []
+        self.action_log = []
+        self.sub_log = []
 
 
 class SelfPlayRunner:
@@ -49,14 +81,8 @@ class SelfPlayRunner:
     def run_game(self, policy, opponent_policy=None, num_turns=10):
         """Play one game and return experiences for the learning player (player 0).
 
-        Args:
-            policy: The policy being trained (plays as player 0).
-            opponent_policy: The opponent's policy. Defaults to a copy of policy.
-            num_turns: Turns per player.
-
         Returns:
-            Tuple of (experiences, won) where experiences is a list of
-            Experience namedtuples and won is 1.0/0.5/0.0.
+            Tuple of (action_experiences, sub_experiences, reward).
         """
         from src.game import WingspanGame
 
@@ -90,22 +116,23 @@ class SelfPlayRunner:
         else:
             reward = 0.5
 
-        experiences = logger_0.assign_rewards(reward)
-        return experiences, reward
+        action_exps, sub_exps = logger_0.assign_rewards(reward)
+        return action_exps, sub_exps, reward
 
     def collect_experience(self, policy, num_games, opponent_policy=None, num_turns=10):
         """Run N games and return aggregated experiences + stats.
 
         Returns:
-            Tuple of (all_experiences, stats) where stats is a dict with
-            'wins', 'losses', 'ties', 'mean_reward'.
+            Tuple of (action_experiences, sub_experiences, stats).
         """
-        all_experiences = []
+        all_action_exps = []
+        all_sub_exps = []
         rewards = []
 
         for _ in range(num_games):
-            experiences, reward = self.run_game(policy, opponent_policy=opponent_policy, num_turns=num_turns)
-            all_experiences.extend(experiences)
+            action_exps, sub_exps, reward = self.run_game(policy, opponent_policy=opponent_policy, num_turns=num_turns)
+            all_action_exps.extend(action_exps)
+            all_sub_exps.extend(sub_exps)
             rewards.append(reward)
 
         stats = {
@@ -115,4 +142,4 @@ class SelfPlayRunner:
             "mean_reward": np.mean(rewards),
         }
 
-        return all_experiences, stats
+        return all_action_exps, all_sub_exps, stats
