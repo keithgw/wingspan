@@ -289,16 +289,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Load advisor for human player hints
-    advisor = None
-    if args.hints:
+    def _load_policy(path, label="Policy"):
         import os
 
-        from src.rl.linear_policy import LinearPolicy as AdvisorPolicy
+        from src.rl.linear_policy import LinearPolicy
 
-        if not os.path.exists(args.hints):
-            parser.error(f"Hints policy file not found: {args.hints}")
-        advisor = AdvisorPolicy.load(args.hints)
+        if not os.path.exists(path):
+            parser.error(f"{label} file not found: {path}")
+        return LinearPolicy.load(path)
+
+    advisor = _load_policy(args.hints, "Hints policy") if args.hints else None
 
     bot_policy_factory = None
     if args.policy == "mcts":
@@ -307,16 +307,10 @@ if __name__ == "__main__":
         num_sims = args.num_simulations
         bot_policy_factory = lambda: MCTSPolicy(num_simulations=num_sims)  # noqa: E731
     elif args.policy == "learned":
-        import os
-
-        from src.rl.linear_policy import LinearPolicy
-
         if not args.policy_path:
             parser.error("--policy_path is required when using --policy learned")
-        if not os.path.exists(args.policy_path):
-            parser.error(f"Policy file not found: {args.policy_path}")
         policy_path = args.policy_path
-        bot_policy_factory = lambda: LinearPolicy.load(policy_path)  # noqa: E731
+        bot_policy_factory = lambda: _load_policy(policy_path)  # noqa: E731
 
     game = WingspanGame(
         num_players=args.num_players,
