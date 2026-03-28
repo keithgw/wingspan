@@ -198,11 +198,12 @@ class TestExpand(unittest.TestCase):
 
     def test_gain_food_child_has_more_food(self):
         leaf = Node(state=self.mcts_state)
+        player_idx = leaf.state.game_turn % leaf.state.num_players
+        food_before = leaf.state.get_player(player_idx).get_food_supply().amount
         self.policy._expand(leaf)
         gain_food_child = next(c for c in leaf.children if c.action == "gain_food")
-        # The child's current player should have advanced (turn ended), so check
-        # that the state has progressed
-        self.assertGreater(gain_food_child.state.game_turn, leaf.state.game_turn)
+        food_after = gain_food_child.state.get_player(player_idx).get_food_supply().amount
+        self.assertEqual(food_after, food_before + 1)
 
     def test_play_a_bird_child_is_mid_turn(self):
         leaf = Node(state=self.mcts_state)
