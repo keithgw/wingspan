@@ -13,44 +13,45 @@ wingspan/
 │   ├── constants.py      # Game phase constants
 │   ├── entities/         # Core game components (bird, deck, player, board, etc.)
 │   ├── rl/
-│   │   ├── policy.py     # Policy ABC, RandomPolicy, MCTSPolicy (stubs)
+│   │   ├── policy.py     # Policy ABC, RandomPolicy, MCTSPolicy
 │   │   └── mcts.py       # Node, Edge classes for game tree
 │   ├── utilities/
-│   │   ├── utils.py      # Rendering helpers
+│   │   ├── utils.py      # Terminal rendering helpers
 │   │   └── player_factory.py  # Player creation (avoids circular imports)
-│   └── game.py           # Main game loop orchestration
-├── tests/                # unittest-based test suite (134 tests)
+│   └── game.py           # Game setup, turn loop, CLI entry point
+├── tests/                # 157 unit tests (unittest + pytest)
 ├── data/                 # Bird data: 180 species from CSV, generated into bird_list.py
 └── __init__.py
 ```
 
 ## Running
 ```bash
-# Sync dependencies (creates .venv)
 uv sync
 
 # Run tests
 uv run python -m pytest
 
-# Run a game (from repo root)
-uv run python -m src.game                           # default: 2 bots, 10 turns each
-uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 human
+# Play against random bot
+uv run python -m src.game --num_players 2 --num_human 1
+
+# Play against MCTS bot
+uv run python -m src.game --num_players 2 --num_human 1 --policy mcts
+
+# Stronger MCTS (more simulations, slower)
+uv run python -m src.game --num_players 2 --num_human 1 --policy mcts --num_simulations 500
 ```
 
 ## Architecture Notes
 - **GameState** consolidates all game objects: bird_deck, discard_pile, tray, bird_feeder, players, phase
-- **MCTSGameState** extends GameState with `to_representation()`/`from_representation()` for hashable state serialization
-- **Players**: `HumanPlayer` (CLI input) and `BotPlayer` (policy-driven) inherit from `Player`
-- **Policies**: `Policy.__call__(state, actions) → str`. `RandomPolicy` picks uniformly. `MCTSPolicy` has rhoUCT scaffold (expand/playout/backpropagate are stubs)
-- **Actions**: 3 of 4 actions implemented: play_a_bird, gain_food, draw_a_bird. Lay eggs NOT implemented
-- **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or special powers). Food is a single token type (real game has 5 types). No bonus cards, no end-of-round goals
+- **MCTSGameState** extends GameState with `to_representation()`/`from_representation()` for hashable state serialization (determinizes hidden info for imperfect-information MCTS)
+- **Players**: `HumanPlayer` (CLI) and `BotPlayer` (policy-driven) inherit from `Player`
+- **Policies**: `Policy.__call__(state, actions) → str`. `RandomPolicy` picks uniformly. `MCTSPolicy` runs full select → expand → playout → backpropagate loop with UCB1 tree policy
+- **Actions**: 3 of 4 implemented: play_a_bird, gain_food, draw_a_bird. Lay eggs NOT implemented
+- **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or powers). Single food type. No bonus cards or end-of-round goals
 - **Entity serialization**: All entities have `to_representation()` returning hashable types; BirdHand, GameBoard, Tray have `from_representation()` for reconstruction
 
-## MCTS Development Frontier
-The `MCTSPolicy._expand()`, `._playout()`, and `._backpropagate()` methods are stubs. These are the next pieces to implement. Key design decisions (from issue #47):
-- Expectimax tree: decision nodes (player choices) and chance nodes (stochastic outcomes)
-- Handle stochasticity via simulation, not enumeration
-- rhoUCT = UCT + environment model
+## Next Milestone
+Self-play training framework (#74): run bot-vs-bot games, collect experience, train policies, persist for reuse. Then learned playout policy (#73) and value network (#75).
 
 ## Conventions
 - Python unittest framework, run with pytest
@@ -59,3 +60,4 @@ The `MCTSPolicy._expand()`, `._playout()`, and `._backpropagate()` methods are s
 - Ruff for linting (E/F/I/UP rules) and formatting (line-length 120)
 - Pre-commit hooks run ruff on commit; CI runs lint + tests on push/PR to main
 - Test files mirror source structure in tests/ directory
+- Internal methods prefixed with `_`; public API is the unprefixed methods
