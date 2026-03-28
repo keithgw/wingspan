@@ -136,7 +136,9 @@ class MCTSGameState(GameState):
         """Calculate turns remaining for a player at a given game turn."""
         return num_turns - (game_turn // num_players)
 
-    def _construct_player(self, hand, representation, deck, game_turn, num_turns, num_players, name):
+    def _construct_player(
+        self, hand, representation, deck, game_turn, num_turns, num_players, name, playout_policy=None
+    ):
         """Construct a BotPlayer from a state representation."""
         from src.entities.food_supply import FoodSupply
         from src.entities.gameboard import GameBoard
@@ -153,6 +155,7 @@ class MCTSGameState(GameState):
             food_supply=food_supply,
             game_board=game_board,
             num_turns_remaining=num_turns_remaining,
+            policy=playout_policy,
         )
 
     def to_representation(self):
@@ -171,8 +174,12 @@ class MCTSGameState(GameState):
         return frozenset(state_dict.items())
 
     @classmethod
-    def from_representation(cls, representation):
-        """Reconstruct an MCTSGameState from a hashable representation."""
+    def from_representation(cls, representation, playout_policy=None):
+        """Reconstruct an MCTSGameState from a hashable representation.
+
+        If playout_policy is provided, all reconstructed BotPlayers use it
+        instead of the default RandomPolicy.
+        """
         from data.bird_list import birds as bird_list
         from src.entities.birdfeeder import BirdFeeder
         from src.entities.deck import Deck
@@ -213,6 +220,7 @@ class MCTSGameState(GameState):
             num_turns=state_dict["num_turns"],
             num_players=num_opponents + 1,
             name="current_player",
+            playout_policy=playout_policy,
         )
 
         # Reconstruct opponents
@@ -234,6 +242,7 @@ class MCTSGameState(GameState):
                     num_turns=state_dict["num_turns"],
                     num_players=num_opponents + 1,
                     name=f"opponent_{i}",
+                    playout_policy=playout_policy,
                 )
             )
 

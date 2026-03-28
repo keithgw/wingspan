@@ -57,9 +57,10 @@ class MCTSPolicy(Policy):
     then returns the action leading to the most-visited child of the root.
     """
 
-    def __init__(self, num_simulations=1000):
+    def __init__(self, num_simulations=1000, playout_policy=None):
         super().__init__()
         self.num_simulations = num_simulations
+        self.playout_policy = playout_policy
         self.root = None
         self._mcts_player_index = None
 
@@ -172,11 +173,16 @@ class MCTSPolicy(Policy):
         return new_state
 
     def _playout(self, node):
-        """Simulate a game from this node to completion using random play."""
+        """Simulate a game from this node to completion.
+
+        Uses playout_policy if provided, otherwise defaults to RandomPolicy.
+        """
         from src.entities.game_state import MCTSGameState
 
-        # Clone state via determinization (creates BotPlayers with RandomPolicy)
-        sim_state = MCTSGameState.from_representation(node.state.to_representation())
+        # Clone state via determinization
+        sim_state = MCTSGameState.from_representation(
+            node.state.to_representation(), playout_policy=self.playout_policy
+        )
 
         with contextlib.redirect_stdout(io.StringIO()):
             # Complete mid-turn action if needed
