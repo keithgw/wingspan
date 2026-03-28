@@ -13,15 +13,15 @@ class FoodSupply:
             self.amount -= amount
         else:
             raise FoodSupply.NotEnoughFoodError("Not enough food supply!")
-        
+
     def can_play_bird(self, bird):
-        '''
+        """
         Checks if the player has enough food to play a bird.
-        
+
         Args:
             bird (Bird): The bird to check if the player has enough food to play.
-        '''
+        """
         return self.amount >= bird.get_food_cost()
-    
+
     def render(self):
         print("Food supply: " + str(self.amount))

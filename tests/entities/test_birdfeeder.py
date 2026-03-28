@@ -1,7 +1,9 @@
 import unittest
-from src.entities.birdfeeder import BirdFeeder
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
+
+from src.entities.birdfeeder import BirdFeeder
+
 
 class TestBirdFeeder(unittest.TestCase):
     def setUp(self):
@@ -23,7 +25,7 @@ class TestBirdFeeder(unittest.TestCase):
         self.bird_feeder.take_food()
         # Assert that reroll() is called when food_count is 0
         self.assertEqual(self.bird_feeder.food_count, 5)
-        
+
     def test_reroll(self):
         self.bird_feeder.food_count = 0
         self.bird_feeder.reroll()
@@ -37,9 +39,10 @@ class TestBirdFeeder(unittest.TestCase):
 
     def test_render(self):
         self.bird_feeder.food_count = 3
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch("sys.stdout", new=StringIO()) as fake_out:
             self.bird_feeder.render()
             self.assertEqual(fake_out.getvalue().strip(), "Bird Feeder: 3")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

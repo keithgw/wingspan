@@ -1,5 +1,6 @@
 import random
 
+
 class Deck:
     def __init__(self, cards=None):
         if cards is None:
@@ -15,9 +16,9 @@ class Deck:
 
     def draw_card(self):
         if self.get_count() == 0:
-            raise ValueError('Deck is empty')
+            raise ValueError("Deck is empty")
         # cards will be drawn from the top of the deck
-        return self.cards.pop(0) 
-    
+        return self.cards.pop(0)
+
     def shuffle_deck(self):
         random.shuffle(self.cards)

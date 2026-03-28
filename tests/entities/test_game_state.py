@@ -1,18 +1,27 @@
 import unittest
-from src.entities.game_state import GameState
-from src.entities.player import Player
-from src.entities.hand import BirdHand
-from src.entities.food_supply import FoodSupply
-from src.entities.deck import Deck
-from src.entities.tray import Tray
 from unittest.mock import patch
+
+from src.entities.deck import Deck
+from src.entities.food_supply import FoodSupply
+from src.entities.game_state import GameState
+from src.entities.hand import BirdHand
+from src.entities.player import Player
+from src.entities.tray import Tray
+
 
 class TestGameState(unittest.TestCase):
     def setUp(self):
         self.num_turns = 10
         self.num_players = 4
-        self.game_state = GameState(num_players=self.num_players, num_turns=self.num_turns)  # Example initialization with 10 turns and 4 players
-        self.test_player = Player(name="Test Player", bird_hand=BirdHand(), food_supply=FoodSupply(), num_turns=self.num_turns)
+        self.game_state = GameState(
+            num_players=self.num_players, num_turns=self.num_turns
+        )  # Example initialization with 10 turns and 4 players
+        self.test_player = Player(
+            name="Test Player",
+            bird_hand=BirdHand(),
+            food_supply=FoodSupply(),
+            num_turns=self.num_turns,
+        )
         self.bird_deck = Deck()
         self.tray = Tray()
 
@@ -27,7 +36,7 @@ class TestGameState(unittest.TestCase):
         self.assertEqual(self.game_state.get_current_player(), 0)  # Assuming player indexing starts from 0
 
     def test_end_player_turn(self):
-        with patch('src.entities.tray.Tray.refill') as mock_refill:
+        with patch("src.entities.tray.Tray.refill") as mock_refill:
             self.game_state.end_player_turn(player=self.test_player, tray=self.tray, bird_deck=self.bird_deck)
 
             # tray is empty, check that tray.refill() is called
@@ -48,5 +57,6 @@ class TestGameState(unittest.TestCase):
             self.game_state.end_player_turn(player=self.test_player, tray=self.tray, bird_deck=self.bird_deck)
         self.assertTrue(self.game_state.is_game_over())
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

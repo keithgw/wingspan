@@ -1,8 +1,10 @@
 import unittest
-from src.entities.gameboard import GameBoard
-from src.entities.bird import Bird
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
+
+from src.entities.bird import Bird
+from src.entities.gameboard import GameBoard
+
 
 class TestGameBoard(unittest.TestCase):
     def setUp(self):
@@ -27,16 +29,25 @@ class TestGameBoard(unittest.TestCase):
 
     def test_render(self):
         # check that render calls render_bird_container, and prints the returned value
-        with patch('src.entities.gameboard.render_bird_container', return_value="Mocked render output") as mock_render, \
-            patch('sys.stdout', new=StringIO()) as mock_stdout:
+        with (
+            patch(
+                "src.entities.gameboard.render_bird_container",
+                return_value="Mocked render output",
+            ) as mock_render,
+            patch("sys.stdout", new=StringIO()) as mock_stdout,
+        ):
             self.gameboard.render()
             self.assertEqual(mock_stdout.getvalue().strip(), "Mocked render output")
-            mock_render.assert_called_once_with(bird_container=self.gameboard.get_birds(), capacity=self.gameboard.capacity)
+            mock_render.assert_called_once_with(
+                bird_container=self.gameboard.get_birds(),
+                capacity=self.gameboard.capacity,
+            )
 
     def test_get_score(self):
         # check that get_score returns the sum of the scores of the birds on the game board
         self.gameboard.add_bird(self.mock_card)
         self.assertEqual(self.gameboard.get_score(), self.mock_card.get_points())
 
-    if __name__ == '__main__':
-        unittest.main()
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,8 +1,10 @@
 import unittest
-from src.entities.food_supply import FoodSupply
-from src.entities.bird import Bird
-from unittest.mock import patch
 from io import StringIO
+from unittest.mock import patch
+
+from src.entities.bird import Bird
+from src.entities.food_supply import FoodSupply
+
 
 class TestFoodSupply(unittest.TestCase):
     def setUp(self):
@@ -23,17 +25,18 @@ class TestFoodSupply(unittest.TestCase):
 
     def test_can_play_bird(self):
         self.food_supply.amount = 2
-        cheaper_bird = Bird('Osprey', 5, 1)
-        equal_cost_bird = Bird('Fish Crow', 5, 2)
-        more_expensive_bird = Bird('Great Horned Owl', 9, 3)
+        cheaper_bird = Bird("Osprey", 5, 1)
+        equal_cost_bird = Bird("Fish Crow", 5, 2)
+        more_expensive_bird = Bird("Great Horned Owl", 9, 3)
         self.assertTrue(self.food_supply.can_play_bird(cheaper_bird))
         self.assertTrue(self.food_supply.can_play_bird(equal_cost_bird))
         self.assertFalse(self.food_supply.can_play_bird(more_expensive_bird))
 
     def test_render(self):
-        with patch('sys.stdout', new=StringIO()) as fake_out:
+        with patch("sys.stdout", new=StringIO()) as fake_out:
             self.food_supply.render()
             self.assertEqual(fake_out.getvalue().strip(), "Food supply: 3")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
