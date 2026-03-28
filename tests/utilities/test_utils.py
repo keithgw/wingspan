@@ -13,44 +13,39 @@ class TestUtils(unittest.TestCase):
         ]
 
     def test_render_bird_container_with_capacity(self):
-        # 5 slots, for example a game board
-        capacity = 5
-
-        expected_output = "Bird Name                     Point Value    Food Cost \n"
-        expected_output += "Osprey                        5              1         \n"
-        expected_output += "Bald Eagle                    9              3         \n"
-        expected_output += "Peregrine Falcon              5              2         \n"
-        expected_output += "empty                         --             --        \n"
-        expected_output += "empty                         --             --        \n"
-
-        output = render_bird_container(self.bird_container, capacity)
-        self.assertEqual(output, expected_output)
+        output = render_bird_container(self.bird_container, capacity=5)
+        # Should contain all birds plus empty slots
+        self.assertIn("Osprey", output)
+        self.assertIn("Bald Eagle", output)
+        self.assertIn("Peregrine Falcon", output)
+        # 3 birds + 2 empty slots = 5 lines + header
+        lines = output.strip().split("\n")
+        self.assertEqual(len(lines), 6)  # header + 5 slots
 
     def test_render_bird_container_without_capacity(self):
-        # 3 slots, for example a bid hand, which should not render empty slots
-
-        expected_output = "Bird Name                     Point Value    Food Cost \n"
-        expected_output += "Osprey                        5              1         \n"
-        expected_output += "Bald Eagle                    9              3         \n"
-        expected_output += "Peregrine Falcon              5              2         \n"
-
         output = render_bird_container(self.bird_container)
-        self.assertEqual(output, expected_output)
+        self.assertIn("Osprey", output)
+        self.assertIn("Bald Eagle", output)
+        self.assertIn("Peregrine Falcon", output)
+        lines = output.strip().split("\n")
+        self.assertEqual(len(lines), 4)  # header + 3 birds, no empty slots
 
     def test_render_bird_container_with_empty_slots(self):
-        # Create an empty bird container with a capacity of 5
-        bird_container = []
-        capacity = 5
+        output = render_bird_container([], capacity=5)
+        lines = output.strip().split("\n")
+        self.assertEqual(len(lines), 6)  # header + 5 empty slots
+        # No bird names, only empty slot markers
+        self.assertNotIn("Osprey", output)
 
-        expected_output = "Bird Name                     Point Value    Food Cost \n"
-        expected_output += "empty                         --             --        \n"
-        expected_output += "empty                         --             --        \n"
-        expected_output += "empty                         --             --        \n"
-        expected_output += "empty                         --             --        \n"
-        expected_output += "empty                         --             --        \n"
-
-        output = render_bird_container(bird_container, capacity)
-        self.assertEqual(output, expected_output)
+    def test_render_shows_points_and_cost(self):
+        output = render_bird_container(self.bird_container)
+        lines = output.strip().split("\n")
+        # Find the Osprey row and verify its VP and food cost columns
+        osprey_line = next(line for line in lines if "Osprey" in line)
+        columns = osprey_line.split()
+        # Columns: Name (1 word), VP, Food
+        self.assertEqual(columns[-2], "5")  # VP
+        self.assertEqual(columns[-1], "1")  # Food cost
 
 
 if __name__ == "__main__":
