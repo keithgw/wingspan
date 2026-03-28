@@ -39,9 +39,13 @@ class TestUtils(unittest.TestCase):
 
     def test_render_shows_points_and_cost(self):
         output = render_bird_container(self.bird_container)
-        # Osprey: 5 VP, 1 food cost
-        self.assertIn("5", output)
-        self.assertIn("1", output)
+        lines = output.strip().split("\n")
+        # Find the Osprey row and verify its VP and food cost columns
+        osprey_line = next(line for line in lines if "Osprey" in line)
+        columns = osprey_line.split()
+        # Columns: Name (1 word), VP, Food
+        self.assertEqual(columns[-2], "5")  # VP
+        self.assertEqual(columns[-1], "1")  # Food cost
 
 
 if __name__ == "__main__":
