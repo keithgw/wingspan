@@ -17,7 +17,8 @@ def render_divider(char="─", width=None):
 def render_header(title, width=None):
     if width is None:
         width = min(TERM_WIDTH, 60)
-    return f"{'─' * 2} {title} {'─' * max(0, width - len(title) - 3)}"
+    prefix = f"{'─' * 2} {title} "
+    return prefix + "─" * max(0, width - len(prefix))
 
 
 def render_bird_container(bird_container, capacity=None):
