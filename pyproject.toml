@@ -16,6 +16,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.9",
     "pre-commit>=4.0",
+    "matplotlib>=3.10.8",
 ]
 
 [tool.hatch.build.targets.wheel]
