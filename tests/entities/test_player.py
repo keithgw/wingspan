@@ -10,6 +10,7 @@ from src.entities.gameboard import GameBoard
 from src.entities.hand import BirdHand
 from src.entities.player import BotPlayer, HumanPlayer, Player
 from src.entities.tray import Tray
+from src.rl.policy import RandomPolicy
 
 
 class TestPlayerBase(unittest.TestCase):
@@ -204,6 +205,7 @@ class TestBotPlayer(TestPlayerBase):
     def setUp(self):
         super().setUp()
         self.player = BotPlayer(
+            policy=RandomPolicy(),
             name=self.name,
             bird_hand=self.bird_hand,
             food_supply=self.food_supply,

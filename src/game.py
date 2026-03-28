@@ -6,8 +6,8 @@ from src.entities.deck import Deck
 from src.entities.food_supply import FoodSupply
 from src.entities.game_state import GameState
 from src.entities.hand import BirdHand
-from src.entities.player import BotPlayer, HumanPlayer
 from src.entities.tray import Tray
+from src.utilities.player_factory import create_bot_player, create_human_player
 
 # Constants
 TOTAL_ALLOWED_IN_STARTING_HAND = 5
@@ -75,7 +75,7 @@ class WingspanGame:
             # create player
             if turn_order[player] == "human":
                 player_name = input(f"What is Player {player + 1}'s name? ")
-                players[player] = HumanPlayer(
+                players[player] = create_human_player(
                     name=player_name,
                     bird_hand=hand,
                     food_supply=food_supply,
@@ -83,7 +83,7 @@ class WingspanGame:
                 )
             else:
                 player_name = f"Bot {player + 1}"
-                players[player] = BotPlayer(
+                players[player] = create_bot_player(
                     name=player_name,
                     bird_hand=hand,
                     food_supply=food_supply,

@@ -1,8 +1,5 @@
-import numpy as np
-
 from src.constants import CHOOSE_A_BIRD_TO_DRAW, CHOOSE_A_BIRD_TO_PLAY
 from src.entities.gameboard import GameBoard
-from src.rl.reinforcement_learning import RandomPolicy, State
 
 
 class Player:
@@ -164,61 +161,23 @@ class HumanPlayer(Player):
 
 
 class BotPlayer(Player):
-    def __init__(self, policy=None, *args, **kwargs):
+    def __init__(self, policy, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if policy is None:
-            self.policy = RandomPolicy()
-        else:
-            self.policy = policy
-
-    def _get_state(self, phase, tray=None, bird_deck=None, legal_actions=None):
-        state = State(
-            game_board=self.game_board,
-            bird_hand=self.bird_hand,
-            food_supply=self.food_supply,
-            phase=phase,
-            tray=tray,
-            bird_deck=bird_deck,
-            legal_actions=legal_actions,
-        )
-        return state
+        self.policy = policy
 
     def _choose_action(self, legal_actions, game_state):
-        state = self._get_state(
-            phase="choose_action",
-            tray=game_state.get_tray(),
-            bird_deck=game_state.get_bird_deck(),
-            legal_actions=legal_actions,
-        )
-
-        action_probs = self.policy(state)
-        chosen_action = np.random.choice(legal_actions, p=action_probs)
+        action = self.policy(state=game_state, actions=legal_actions)
 
         # Update phase for multi-step actions
-        if chosen_action == self.actions[0]:
+        if action == self.actions[0]:
             game_state.set_phase(CHOOSE_A_BIRD_TO_PLAY)
-        elif chosen_action == self.actions[2]:
+        elif action == self.actions[2]:
             game_state.set_phase(CHOOSE_A_BIRD_TO_DRAW)
 
-        return chosen_action
+        return action
 
     def _choose_a_bird_to_play(self, playable_birds, game_state):
-        state = self._get_state(
-            phase="choose_a_bird_to_play",
-            tray=game_state.get_tray(),
-            bird_deck=game_state.get_bird_deck(),
-        )
-        bird_probs = self.policy(state)
-        birds_in_hand = self.bird_hand.get_card_names_in_hand()
-        chosen_bird = np.random.choice(birds_in_hand, p=bird_probs)
-        return chosen_bird
+        return self.policy(state=game_state, actions=playable_birds)
 
     def _choose_a_bird_to_draw(self, valid_choices, game_state):
-        state = self._get_state(
-            phase="choose_a_bird_to_draw",
-            tray=game_state.get_tray(),
-            bird_deck=game_state.get_bird_deck(),
-        )
-        draw_probs = self.policy(state)
-        chosen_bird = np.random.choice(valid_choices, p=draw_probs[: len(valid_choices)])
-        return chosen_bird
+        return self.policy(state=game_state, actions=valid_choices)
