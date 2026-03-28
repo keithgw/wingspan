@@ -45,5 +45,6 @@ uv run python -m src.game --num_players 2 --num_human 1      # 2 players, 1 huma
 
 ## Conventions
 - Python unittest framework, run with pytest
-- No requirements.txt or setup.py — pure stdlib + pytest
+- `pyproject.toml` manages dependencies via uv; runtime dep: `numpy`, dev dep: `pytest`
+- Not packaged as a distribution (no `[build-system]` table); run directly with `uv run`
 - Test files mirror source structure in tests/ directory
