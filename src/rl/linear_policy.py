@@ -17,15 +17,23 @@ class LinearPolicy(Policy):
         self.weights = np.zeros((NUM_FEATURES, num_actions), dtype=np.float64)
 
     def _score_actions(self, state, actions):
-        """Return (features, probabilities) for the given actions."""
-        features = featurize(state)
-        logits = features @ self.weights
+        """Return (features, probabilities) for the given actions.
 
-        # Map action strings to column indices (use hash for stability across phases)
-        action_scores = logits[: len(actions)]
+        For CHOOSE_ACTION (up to num_actions choices), uses learned weights.
+        For other phases (variable action count), defaults to uniform —
+        the linear model focuses on the strategic action choice.
+        """
+        features = featurize(state)
+        n = len(actions)
+
+        if n <= self.num_actions:
+            logits = (features @ self.weights)[:n]
+        else:
+            # More actions than weight columns (e.g., 4 tray birds) — uniform
+            logits = np.zeros(n)
 
         # Softmax with numerical stability
-        shifted = action_scores - np.max(action_scores)
+        shifted = logits - np.max(logits)
         exp_scores = np.exp(shifted)
         probs = exp_scores / np.sum(exp_scores)
 
