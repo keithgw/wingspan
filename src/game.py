@@ -29,6 +29,7 @@ class WingspanGame:
         num_turns=DEFAULT_NUM_TURNS,
         num_starting_cards=DEFAULT_NUM_STARTING_CARDS,
         bot_policy_factory=None,
+        advisor=None,
     ):
         if game_state is None:
             self.game_state = self._initialize_game_state(
@@ -37,11 +38,14 @@ class WingspanGame:
                 num_turns=num_turns,
                 num_starting_cards=num_starting_cards,
                 bot_policy_factory=bot_policy_factory,
+                advisor=advisor,
             )
         else:
             self.game_state = game_state
 
-    def _initialize_game_state(self, num_players, num_human, num_turns, num_starting_cards, bot_policy_factory):
+    def _initialize_game_state(
+        self, num_players, num_human, num_turns, num_starting_cards, bot_policy_factory, advisor=None
+    ):
         # Validate inputs
         if num_human > num_players:
             raise ValueError("Number of human players cannot exceed total number of players.")
@@ -85,6 +89,7 @@ class WingspanGame:
                     bird_hand=hand,
                     food_supply=food_supply,
                     num_turns_remaining=num_turns,
+                    advisor=advisor,
                 )
             else:
                 player_name = f"Bot {player + 1}"
@@ -275,8 +280,25 @@ if __name__ == "__main__":
         default=None,
         help="Path to a trained policy file (required with --policy learned)",
     )
+    parser.add_argument(
+        "--hints",
+        type=str,
+        default=None,
+        help="Path to a trained policy file to show decision hints for human players",
+    )
 
     args = parser.parse_args()
+
+    # Load advisor for human player hints
+    advisor = None
+    if args.hints:
+        import os
+
+        from src.rl.linear_policy import LinearPolicy as AdvisorPolicy
+
+        if not os.path.exists(args.hints):
+            parser.error(f"Hints policy file not found: {args.hints}")
+        advisor = AdvisorPolicy.load(args.hints)
 
     bot_policy_factory = None
     if args.policy == "mcts":
@@ -302,5 +324,6 @@ if __name__ == "__main__":
         num_turns=args.num_turns,
         num_starting_cards=args.num_starting_cards,
         bot_policy_factory=bot_policy_factory,
+        advisor=advisor,
     )
     game.play()
