@@ -25,6 +25,7 @@ class WingspanGame:
         num_human=DEFAULT_NUM_HUMAN,
         num_turns=DEFAULT_NUM_TURNS,
         num_starting_cards=DEFAULT_NUM_STARTING_CARDS,
+        bot_policy=None,
     ):
         if game_state is None:
             self.game_state = self._initialize_game_state(
@@ -32,11 +33,12 @@ class WingspanGame:
                 num_human=num_human,
                 num_turns=num_turns,
                 num_starting_cards=num_starting_cards,
+                bot_policy=bot_policy,
             )
         else:
             self.game_state = game_state
 
-    def _initialize_game_state(self, num_players, num_human, num_turns, num_starting_cards):
+    def _initialize_game_state(self, num_players, num_human, num_turns, num_starting_cards, bot_policy):
         # Validate inputs
         if num_human > num_players:
             raise ValueError("Number of human players cannot exceed total number of players.")
@@ -88,6 +90,7 @@ class WingspanGame:
                     bird_hand=hand,
                     food_supply=food_supply,
                     num_turns_remaining=num_turns,
+                    policy=bot_policy,
                 )
 
         # Initialize the bird tray
@@ -186,12 +189,33 @@ if __name__ == "__main__":
         help="Number of cards in each player's starting hand",
     )
 
+    parser.add_argument(
+        "--policy",
+        type=str,
+        default="random",
+        choices=["random", "mcts"],
+        help="Bot policy: 'random' (fast) or 'mcts' (smarter, slower)",
+    )
+    parser.add_argument(
+        "--num_simulations",
+        type=int,
+        default=100,
+        help="Number of MCTS simulations per decision (only used with --policy mcts)",
+    )
+
     args = parser.parse_args()
+
+    bot_policy = None
+    if args.policy == "mcts":
+        from src.rl.policy import MCTSPolicy
+
+        bot_policy = MCTSPolicy(num_simulations=args.num_simulations)
 
     game = WingspanGame(
         num_players=args.num_players,
         num_human=args.num_human,
         num_turns=args.num_turns,
         num_starting_cards=args.num_starting_cards,
+        bot_policy=bot_policy,
     )
     game.play()
