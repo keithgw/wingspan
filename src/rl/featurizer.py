@@ -117,7 +117,7 @@ def _unseen_bird_stats(state, player):
     - mean_ratio: average VP/cost ratio of unseen cards
     - prob_better: fraction with ratio > best in hand
     - prob_affordable: fraction with cost <= current food
-    - draw_upside: expected VP of best affordable unseen card minus best immediate play VP
+    - draw_upside: mean VP of affordable unseen cards minus best immediate play VP
     """
     from data.bird_list import birds as all_birds
 
