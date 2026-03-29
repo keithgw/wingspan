@@ -1,7 +1,9 @@
-"""Pure analysis functions for interpreting LinearPolicy weights.
+"""Analysis functions for interpreting LinearPolicy weights.
 
-All functions return data structures (namedtuples, dicts, lists) with no I/O.
-Display formatting and matplotlib visualization live in train.py.
+Most functions are pure (state in, data out). Exceptions are checkpoint
+loading (reads .npz files from disk) and sample-state generation (creates
+game instances). Display formatting and matplotlib visualization live in
+train.py.
 """
 
 import glob
