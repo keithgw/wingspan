@@ -6,7 +6,8 @@ Reinforcement learning agents for the board game [Wingspan](https://stonemaierga
 
 1. **Game engine** — Implement a playable simplified Wingspan (done)
 2. **MCTS agent** — Monte Carlo Tree Search with UCT to select actions (done)
-3. **Self-play training** — Agents play against each other to iteratively improve their policies (next)
+3. **Self-play training** — Agents play against each other to iteratively improve their policies (done)
+4. **Policy interpretation** — Understand what agents learn about the game (done)
 
 ## Playing the Game
 
@@ -43,6 +44,12 @@ uv run python -m src.train evaluate --policy_path models/policy_latest.npz --opp
 
 # Play against a trained policy
 uv run python -m src.game --num_players 2 --num_human 1 --policy learned --policy_path models/policy_latest.npz
+
+# Interpret a trained policy
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode summary
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode weights
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode trace
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode evolution --save
 
 # Run tests
 uv run python -m pytest
@@ -86,13 +93,14 @@ wingspan/
 │   │   ├── featurizer.py   # GameState → feature vector for learning
 │   │   ├── self_play.py    # Bot-vs-bot game runner + experience collection
 │   │   ├── trainer.py      # REINFORCE policy gradient training
-│   │   └── evaluator.py    # Win rate evaluation against baselines
+│   │   ├── evaluator.py    # Win rate evaluation against baselines
+│   │   └── interpreter.py  # Policy interpretation and analysis
 │   ├── utilities/
 │   │   ├── utils.py        # Terminal rendering helpers
 │   │   └── player_factory.py  # Player creation (avoids circular imports)
 │   ├── game.py             # Game setup, turn loop, CLI entry point
 │   └── train.py            # CLI for training and evaluation
-├── tests/                  # 157 unit tests (unittest + pytest)
+├── tests/                  # Unit tests (unittest + pytest)
 ├── data/
 │   ├── bird_data.csv       # Source bird data
 │   ├── bird_list.py        # Generated: 180 Bird objects
@@ -124,13 +132,13 @@ wingspan/
 - **Self-play runner** plays bot-vs-bot games, collects experience for both action and sub-decision levels
 - **Evaluator** measures win rate against random or MCTS baselines, alternating positions to remove first-player bias
 - **Training CLI** (`src/train.py`): train with `--fresh`/`--resume`, evaluate against random or MCTS, plot training progress
+- **Interpretation** (`interpreter.py`): pure analysis functions for weight inspection, feature importance, strategy rule generation, decision traces with diverse game states, and weight evolution across checkpoints. CLI via `train.py interpret` with 5 modes: `weights`, `importance`, `summary`, `trace`, `evolution`. Visualizations use seaborn
 
 ## Roadmap
 
 See [GitHub Issues](https://github.com/keithgw/wingspan/issues) for the full backlog. Next milestones:
 
 - **#75** — Add a value network to evaluate positions without full playout
-- **#80** — Interpret learned policies to extract game insights
 
 ## References
 
