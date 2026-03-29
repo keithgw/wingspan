@@ -284,15 +284,21 @@ def create_sample_states(num_samples=3, seed=42):
 
     from src.game import WingspanGame
 
-    states = []
-    for i in range(num_samples):
-        s = seed + i
-        random.seed(s)
-        np.random.seed(s)
-        game = WingspanGame(num_players=2, num_turns=10)
-        states.append(game.game_state)
+    # Save caller's RNG state so we don't leak side effects
+    py_state = random.getstate()
+    np_state = np.random.get_state()
 
-    return states
+    try:
+        states = []
+        for i in range(num_samples):
+            random.seed(seed + i)
+            np.random.seed(seed + i)
+            game = WingspanGame(num_players=2, num_turns=10)
+            states.append(game.game_state)
+        return states
+    finally:
+        random.setstate(py_state)
+        np.random.set_state(np_state)
 
 
 def generate_diverse_states(policy, num_candidates=200, seed=42):
@@ -310,50 +316,57 @@ def generate_diverse_states(policy, num_candidates=200, seed=42):
 
     from src.game import WingspanGame
 
-    candidates = []
-    num_turns = 10
-    total_game_turns = num_turns * 2  # 2 players
+    # Save caller's RNG state so we don't leak side effects
+    py_state = random.getstate()
+    np_state = np.random.get_state()
 
-    for i in range(num_candidates):
-        s = seed + i
-        random.seed(s)
-        np.random.seed(s)
+    try:
+        candidates = []
+        num_turns = 10
+        total_game_turns = num_turns * 2  # 2 players
 
-        with contextlib.redirect_stdout(io.StringIO()):
-            game = WingspanGame(num_players=2, num_human=0, num_turns=num_turns)
+        for i in range(num_candidates):
+            random.seed(seed + i)
+            np.random.seed(seed + i)
 
-            # Spread candidates across game stages
-            turns_to_play = (i * total_game_turns) // num_candidates
-            for _ in range(turns_to_play):
-                if game.game_state.is_game_over():
-                    break
-                player = game.game_state.get_current_player()
-                action = player.request_action(game_state=game.game_state)
-                player.take_action(action=action, game_state=game.game_state)
-                game.game_state.end_player_turn(player=player)
+            with contextlib.redirect_stdout(io.StringIO()):
+                game = WingspanGame(num_players=2, num_human=0, num_turns=num_turns)
 
-        if game.game_state.is_game_over():
-            continue
+                # Spread candidates across game stages
+                turns_to_play = (i * total_game_turns) // num_candidates
+                for _ in range(turns_to_play):
+                    if game.game_state.is_game_over():
+                        break
+                    player = game.game_state.get_current_player()
+                    action = player.request_action(game_state=game.game_state)
+                    player.take_action(action=action, game_state=game.game_state)
+                    game.game_state.end_player_turn(player=player)
 
-        state = game.game_state
-        all_logits = featurize(state) @ policy.weights
-        probs = _softmax(all_logits)
-        entropy = float(-np.sum(probs * np.log(probs + 1e-10)))
-        normalized = entropy / float(np.log(3))
+            if game.game_state.is_game_over():
+                continue
 
-        candidates.append({"state": state, "probs": probs, "entropy": normalized, "turn": state.game_turn})
+            state = game.game_state
+            all_logits = featurize(state) @ policy.weights
+            probs = _softmax(all_logits)
+            entropy = float(-np.sum(probs * np.log(probs + 1e-10)))
+            normalized = entropy / float(np.log(3))
 
-    if not candidates:
-        return []
+            candidates.append({"state": state, "probs": probs, "entropy": normalized, "turn": state.game_turn})
 
-    candidates.sort(key=lambda x: x["entropy"])
-    n = len(candidates)
+        if not candidates:
+            return []
 
-    return [
-        {**candidates[0], "label": "Confident"},
-        {**candidates[n // 2], "label": "Moderate"},
-        {**candidates[-1], "label": "Uncertain"},
-    ]
+        candidates.sort(key=lambda x: x["entropy"])
+        n = len(candidates)
+
+        return [
+            {**candidates[0], "label": "Confident"},
+            {**candidates[n // 2], "label": "Moderate"},
+            {**candidates[-1], "label": "Uncertain"},
+        ]
+    finally:
+        random.setstate(py_state)
+        np.random.set_state(np_state)
 
 
 def format_game_context(state):
