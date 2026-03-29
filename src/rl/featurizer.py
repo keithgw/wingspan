@@ -1,5 +1,7 @@
 import numpy as np
 
+from data.bird_list import birds as _ALL_BIRDS
+
 # Canonical action indices for the CHOOSE_ACTION phase
 ACTION_INDEX = {"play_a_bird": 0, "gain_food": 1, "draw_a_bird": 2}
 
@@ -61,6 +63,16 @@ def _points_cost_ratio(bird):
     return bird.get_points() / cost
 
 
+# --- Precomputed bird pool arrays (computed once at import time) ---
+# Avoids recomputing ratios/costs for all 180 birds on every featurize call.
+
+_POOL_NAMES = [b.get_name() for b in _ALL_BIRDS]
+_POOL_POINTS = np.array([b.get_points() for b in _ALL_BIRDS], dtype=np.float64)
+_POOL_COSTS = np.array([b.get_food_cost() for b in _ALL_BIRDS], dtype=np.float64)
+_POOL_RATIOS = np.array([_points_cost_ratio(b) for b in _ALL_BIRDS], dtype=np.float64)
+_POOL_NAME_TO_IDX = {name: i for i, name in enumerate(_POOL_NAMES)}
+
+
 def _best_ratio(birds):
     """Return the best points/cost ratio from a list of birds, or 0.0 if empty."""
     if not birds:
@@ -100,16 +112,6 @@ def _max_achievable_vp(hand_birds, food, board_slots_left, turns_left):
     return total_vp
 
 
-def _get_visible_birds(state, player):
-    """Collect all birds visible to the current player (hand, all boards, tray)."""
-    visible = []
-    visible.extend(player.get_bird_hand().get_cards_in_hand())
-    for p in state.get_players():
-        visible.extend(p.get_game_board().get_birds())
-    visible.extend(state.get_tray().get_birds_in_tray())
-    return visible
-
-
 def _unseen_bird_stats(state, player):
     """Compute statistics about unseen birds (full pool minus visible cards).
 
@@ -117,42 +119,53 @@ def _unseen_bird_stats(state, player):
     (own hand, all boards, tray). This includes the deck, opponent hand,
     and discard pile without distinguishing between them.
 
+    Uses precomputed numpy arrays for the full bird pool, so per-call cost
+    is a set lookup + array masking rather than iterating over bird objects.
+
     Returns (mean_ratio, prob_better, prob_affordable, draw_upside) where:
     - mean_ratio: average VP/cost ratio of unseen cards
     - prob_better: fraction with ratio > best in hand
     - prob_affordable: fraction with cost <= current food
     - draw_upside: mean VP of affordable unseen cards minus best immediate play VP
     """
-    from data.bird_list import birds as all_birds
+    # Build visibility mask using precomputed index lookup
+    visible_names = set()
+    for b in player.get_bird_hand().get_cards_in_hand():
+        visible_names.add(b.get_name())
+    for p in state.get_players():
+        for b in p.get_game_board().get_birds():
+            visible_names.add(b.get_name())
+    for b in state.get_tray().get_birds_in_tray():
+        visible_names.add(b.get_name())
 
-    visible = _get_visible_birds(state, player)
-    visible_names = {b.get_name() for b in visible}
+    mask = np.ones(len(_POOL_NAMES), dtype=bool)
+    for name in visible_names:
+        idx = _POOL_NAME_TO_IDX.get(name)
+        if idx is not None:
+            mask[idx] = False
 
-    # Build unseen pool (subtract visible by name; duplicates possible across games but
-    # each card is unique in a single game)
-    unseen = [b for b in all_birds if b.get_name() not in visible_names]
-
-    if not unseen:
+    n_unseen = mask.sum()
+    if n_unseen == 0:
         return 0.0, 0.0, 0.0, 0.0
+
+    unseen_ratios = _POOL_RATIOS[mask]
+    unseen_costs = _POOL_COSTS[mask]
+    unseen_points = _POOL_POINTS[mask]
 
     food = player.get_food_supply().amount
     hand_birds = player.get_bird_hand().get_cards_in_hand()
     best_hand_ratio = _best_ratio(hand_birds)
+
+    mean_ratio = float(unseen_ratios.mean())
+    prob_better = float((unseen_ratios > best_hand_ratio).sum() / n_unseen)
+    prob_affordable = float((unseen_costs <= food).sum() / n_unseen)
+
+    # Draw upside: mean VP of affordable unseen cards vs best immediate play
+    affordable_mask = unseen_costs <= food
+    n_affordable = affordable_mask.sum()
+    mean_affordable_vp = float(unseen_points[affordable_mask].mean()) if n_affordable > 0 else 0.0
+
     board = player.get_game_board()
-
-    # Unseen card statistics
-    unseen_ratios = [_points_cost_ratio(b) for b in unseen]
-    mean_ratio = sum(unseen_ratios) / len(unseen_ratios)
-    prob_better = sum(1 for r in unseen_ratios if r > best_hand_ratio) / len(unseen)
-    prob_affordable = sum(1 for b in unseen if b.get_food_cost() <= food) / len(unseen)
-
-    # Draw upside: expected VP of affordable unseen cards vs best immediate play
-    affordable_unseen = [b for b in unseen if b.get_food_cost() <= food]
-    if affordable_unseen:
-        mean_affordable_vp = sum(b.get_points() for b in affordable_unseen) / len(affordable_unseen)
-    else:
-        mean_affordable_vp = 0.0
-
     if board.check_if_full():
         best_immediate_vp = 0
     else:
