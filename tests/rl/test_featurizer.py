@@ -66,6 +66,35 @@ class TestFeaturizer(unittest.TestCase):
         # Both players start with 0 score, lead should be 0
         self.assertEqual(features[lead_idx], 0.0)
 
+    def test_turns_remaining_at_start(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("turns_remaining")
+        self.assertEqual(features[idx], 1.0)
+
+    def test_max_achievable_vp_positive_with_hand(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("max_achievable_vp")
+        # With food and birds in hand at game start, should be positive
+        player = self.state.get_current_player()
+        hand = player.get_bird_hand().get_cards_in_hand()
+        food = player.get_food_supply().amount
+        playable = [b for b in hand if food >= b.get_food_cost()]
+        if playable:
+            self.assertGreater(features[idx], 0.0)
+
+    def test_unseen_mean_ratio_is_bounded(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("unseen_mean_ratio")
+        # Should be between 0 and 1 (normalized by /5.0)
+        self.assertGreater(features[idx], 0.0)
+        self.assertLessEqual(features[idx], 1.0)
+
+    def test_prob_draw_affordable_at_start(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("prob_draw_affordable")
+        # At start with 3 food, most cards (cost 0-3) are affordable
+        self.assertGreater(features[idx], 0.5)
+
     def test_hand_min_cost_zero_when_nothing_playable(self):
         # Drain all food so nothing is playable
         player = self.state.get_current_player()
