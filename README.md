@@ -126,7 +126,7 @@ wingspan/
 
 ### Training
 - **LinearPolicy** uses two learned linear models, both interpretable (#80):
-  - **Action choice**: `state_features @ weights → softmax` picks between play/gain/draw. 16 state features (game progress, food, score, hand/tray quality, points-to-cost ratios, opponent state) × 3 action columns
+  - **Action choice**: `state_features @ weights → softmax` picks between play/gain/draw. 22 state features (game progress, food, score, hand/tray quality, strategic calculations like max achievable VP and greedy rollout, deck composition stats, opponent state) × 3 action columns
   - **Sub-decisions**: `[state_features; option_features] @ sub_weights → softmax` picks which bird to play/draw. 8 per-option features (VP, cost, ratio, affordability, time to play, deck flag) let the model learn contextual bird selection
 - **REINFORCE** policy gradient with baseline updates both weight vectors from self-play outcomes
 - **Self-play runner** plays bot-vs-bot games, collects experience for both action and sub-decision levels
