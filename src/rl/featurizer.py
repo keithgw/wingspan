@@ -111,7 +111,11 @@ def _get_visible_birds(state, player):
 
 
 def _unseen_bird_stats(state, player):
-    """Compute statistics about unseen birds (deck + opponent hand + discard).
+    """Compute statistics about unseen birds (full pool minus visible cards).
+
+    Unseen = all 180 birds minus those visible to the current player
+    (own hand, all boards, tray). This includes the deck, opponent hand,
+    and discard pile without distinguishing between them.
 
     Returns (mean_ratio, prob_better, prob_affordable, draw_upside) where:
     - mean_ratio: average VP/cost ratio of unseen cards
