@@ -14,12 +14,13 @@ wingspan/
 │   ├── entities/         # Core game components (bird, deck, player, board, etc.)
 │   ├── rl/
 │   │   ├── policy.py     # Policy ABC, RandomPolicy, MCTSPolicy
-│   │   └── mcts.py       # Node, Edge classes for game tree
+│   │   ├── mcts.py       # Node, Edge classes for game tree
+│   │   └── interpreter.py # Policy interpretation and analysis
 │   ├── utilities/
 │   │   ├── utils.py      # Terminal rendering helpers
 │   │   └── player_factory.py  # Player creation (avoids circular imports)
 │   └── game.py           # Game setup, turn loop, CLI entry point
-├── tests/                # 157 unit tests (unittest + pytest)
+├── tests/                # unit tests (unittest + pytest)
 ├── data/                 # Bird data: 180 species from CSV, generated into bird_list.py
 └── __init__.py
 ```
@@ -48,6 +49,12 @@ uv run python -m src.train evaluate --policy_path models/policy_latest.npz
 
 # Play against trained policy
 uv run python -m src.game --policy learned --policy_path models/policy_latest.npz
+
+# Interpret a trained policy
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode summary
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode weights --save
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode trace
+uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode evolution --save
 ```
 
 ## Architecture Notes
@@ -58,10 +65,11 @@ uv run python -m src.game --policy learned --policy_path models/policy_latest.np
 - **Actions**: 3 of 4 implemented: play_a_bird, gain_food, draw_a_bird. Lay eggs NOT implemented
 - **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or powers). Single food type. No bonus cards or end-of-round goals
 - **Entity serialization**: All entities have `to_representation()` returning hashable types; BirdHand, GameBoard, Tray have `from_representation()` for reconstruction
-- **Training**: `LinearPolicy` (numpy-based, interpretable weights) trained via REINFORCE self-play. `featurizer.py` converts GameState to 17 named features. `self_play.py` runs games and collects experience. `train.py` is the CLI entry point
+- **Training**: `LinearPolicy` (numpy-based, interpretable weights) trained via REINFORCE self-play. `featurizer.py` converts GameState to 16 named features. `self_play.py` runs games and collects experience. `train.py` is the CLI entry point
+- **Interpretation**: `interpreter.py` provides pure analysis functions (weight inspection, feature importance, strategy rules, decision traces, weight evolution). CLI via `train.py interpret` with 5 modes: weights, importance, summary, trace, evolution
 
 ## Next Milestone
-Learned playout policy (#73), value network (#75), and policy interpretation (#80).
+Learned playout policy (#73) and value network (#75).
 
 ## Conventions
 - Python unittest framework, run with pytest
