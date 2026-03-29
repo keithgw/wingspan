@@ -14,10 +14,20 @@ FEATURE_NAMES = [
     "hand_min_cost",
     "can_play_bird",
     "hand_best_ratio",
-    "tray_count",
+    # Tier 1: strategic calculations (#91)
+    "turns_remaining",
+    "best_immediate_vp",
+    "affordable_bird_count",
+    "max_achievable_vp",
+    # Tray quality (kept from original)
     "tray_max_points",
     "tray_best_ratio",
-    "deck_remaining",
+    # Tier 2: deck composition (#91)
+    "unseen_mean_ratio",
+    "prob_draw_better",
+    "prob_draw_affordable",
+    "draw_vp_upside",
+    # Opponent/relative
     "opponent_best_score",
     "opponent_avg_food",
     "score_lead",
@@ -58,6 +68,100 @@ def _best_ratio(birds):
     return max(_points_cost_ratio(bird) for bird in birds)
 
 
+def _max_achievable_vp(hand_birds, food, board_slots_left, turns_left):
+    """Greedy rollout: max VP achievable over remaining turns.
+
+    Sorts hand by VP descending, greedily plays affordable birds (spending
+    a turn each), spends turns gaining food when needed. Returns total VP
+    that could be added to the board.
+    """
+    if turns_left <= 0 or board_slots_left <= 0 or not hand_birds:
+        return 0.0
+
+    candidates = sorted(hand_birds, key=lambda b: b.get_points(), reverse=True)
+    total_vp = 0.0
+    remaining_food = food
+    remaining_turns = turns_left
+    remaining_slots = board_slots_left
+
+    for bird in candidates:
+        if remaining_turns <= 0 or remaining_slots <= 0:
+            break
+        cost = bird.get_food_cost()
+        food_needed = max(0, cost - remaining_food)
+        # Need food_needed turns to gain food + 1 turn to play
+        turns_needed = food_needed + 1
+        if turns_needed <= remaining_turns:
+            total_vp += bird.get_points()
+            remaining_food = remaining_food + food_needed - cost
+            remaining_turns -= turns_needed
+            remaining_slots -= 1
+
+    return total_vp
+
+
+def _get_visible_birds(state, player):
+    """Collect all birds visible to the current player (hand, all boards, tray)."""
+    visible = []
+    visible.extend(player.get_bird_hand().get_cards_in_hand())
+    for p in state.get_players():
+        visible.extend(p.get_game_board().get_birds())
+    visible.extend(state.get_tray().get_birds_in_tray())
+    return visible
+
+
+def _unseen_bird_stats(state, player):
+    """Compute statistics about unseen birds (full pool minus visible cards).
+
+    Unseen = all 180 birds minus those visible to the current player
+    (own hand, all boards, tray). This includes the deck, opponent hand,
+    and discard pile without distinguishing between them.
+
+    Returns (mean_ratio, prob_better, prob_affordable, draw_upside) where:
+    - mean_ratio: average VP/cost ratio of unseen cards
+    - prob_better: fraction with ratio > best in hand
+    - prob_affordable: fraction with cost <= current food
+    - draw_upside: mean VP of affordable unseen cards minus best immediate play VP
+    """
+    from data.bird_list import birds as all_birds
+
+    visible = _get_visible_birds(state, player)
+    visible_names = {b.get_name() for b in visible}
+
+    # Build unseen pool (subtract visible by name; duplicates possible across games but
+    # each card is unique in a single game)
+    unseen = [b for b in all_birds if b.get_name() not in visible_names]
+
+    if not unseen:
+        return 0.0, 0.0, 0.0, 0.0
+
+    food = player.get_food_supply().amount
+    hand_birds = player.get_bird_hand().get_cards_in_hand()
+    best_hand_ratio = _best_ratio(hand_birds)
+    board = player.get_game_board()
+
+    # Unseen card statistics
+    unseen_ratios = [_points_cost_ratio(b) for b in unseen]
+    mean_ratio = sum(unseen_ratios) / len(unseen_ratios)
+    prob_better = sum(1 for r in unseen_ratios if r > best_hand_ratio) / len(unseen)
+    prob_affordable = sum(1 for b in unseen if b.get_food_cost() <= food) / len(unseen)
+
+    # Draw upside: expected VP of affordable unseen cards vs best immediate play
+    affordable_unseen = [b for b in unseen if b.get_food_cost() <= food]
+    if affordable_unseen:
+        mean_affordable_vp = sum(b.get_points() for b in affordable_unseen) / len(affordable_unseen)
+    else:
+        mean_affordable_vp = 0.0
+
+    if board.check_if_full():
+        best_immediate_vp = 0
+    else:
+        best_immediate_vp = max((b.get_points() for b in hand_birds if food >= b.get_food_cost()), default=0)
+    draw_upside = mean_affordable_vp - best_immediate_vp
+
+    return mean_ratio, prob_better, prob_affordable, draw_upside
+
+
 def featurize(state):
     """Convert a GameState to a fixed-size numpy feature vector.
 
@@ -85,13 +189,20 @@ def featurize(state):
     can_play_bird = 1.0 if playable and not board.check_if_full() else 0.0
     hand_best_ratio = _best_ratio(hand_birds)
 
-    # Tray features
-    tray_count = len(tray_birds) / state.get_tray().capacity
+    # Tier 1: strategic calculations (#91)
+    turns_remaining = player.get_turns_remaining()
+    board_slots_left = board.capacity - len(board.get_birds())
+    can_play = playable and board_slots_left > 0
+    best_immediate_vp = max((b.get_points() for b in playable), default=0) if can_play else 0
+    affordable_count = len(playable) if can_play else 0
+    max_vp = _max_achievable_vp(hand_birds, food, board_slots_left, turns_remaining)
+
+    # Tray quality features (kept from original)
     tray_max_points = max((b.get_points() for b in tray_birds), default=0)
     tray_best_ratio = _best_ratio(tray_birds)
 
-    # Shared resources
-    deck_remaining = state.get_bird_deck().get_count() / 180.0
+    # Tier 2: deck composition (#91)
+    unseen_mean_ratio, prob_draw_better, prob_draw_affordable, draw_vp_upside = _unseen_bird_stats(state, player)
 
     # Opponent features (use live board score for consistency)
     opponents = [p for p in state.get_players() if p is not player]
@@ -115,10 +226,20 @@ def featurize(state):
             hand_min_cost / 5.0,
             can_play_bird,
             hand_best_ratio / 5.0,
-            tray_count,
+            # Tier 1
+            turns_remaining / state.num_turns,
+            best_immediate_vp / 10.0,
+            affordable_count / 5.0,
+            max_vp / 50.0,
+            # Tray quality
             tray_max_points / 10.0,
             tray_best_ratio / 5.0,
-            deck_remaining,
+            # Tier 2
+            unseen_mean_ratio / 5.0,
+            prob_draw_better,
+            prob_draw_affordable,
+            np.clip(draw_vp_upside / 10.0, -1.0, 1.0),
+            # Opponent/relative
             opponent_best_score / 50.0,
             opponent_avg_food / 10.0,
             score_lead / 50.0,

@@ -2,12 +2,14 @@ import unittest
 
 import numpy as np
 
+from src.entities.bird import Bird
 from src.game import WingspanGame
 from src.rl.featurizer import (
     FEATURE_NAMES,
     NUM_FEATURES,
     NUM_OPTION_FEATURES,
     OPTION_FEATURE_NAMES,
+    _max_achievable_vp,
     featurize,
     featurize_option,
 )
@@ -66,6 +68,35 @@ class TestFeaturizer(unittest.TestCase):
         # Both players start with 0 score, lead should be 0
         self.assertEqual(features[lead_idx], 0.0)
 
+    def test_turns_remaining_at_start(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("turns_remaining")
+        self.assertEqual(features[idx], 1.0)
+
+    def test_max_achievable_vp_positive_with_hand(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("max_achievable_vp")
+        # With food and birds in hand at game start, should be positive
+        player = self.state.get_current_player()
+        hand = player.get_bird_hand().get_cards_in_hand()
+        food = player.get_food_supply().amount
+        playable = [b for b in hand if food >= b.get_food_cost()]
+        if playable:
+            self.assertGreater(features[idx], 0.0)
+
+    def test_unseen_mean_ratio_is_bounded(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("unseen_mean_ratio")
+        # Should be between 0 and 1 (normalized by /5.0)
+        self.assertGreater(features[idx], 0.0)
+        self.assertLessEqual(features[idx], 1.0)
+
+    def test_prob_draw_affordable_at_start(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("prob_draw_affordable")
+        # At start with 3 food, most cards (cost 0-3) are affordable
+        self.assertGreater(features[idx], 0.5)
+
     def test_hand_min_cost_zero_when_nothing_playable(self):
         # Drain all food so nothing is playable
         player = self.state.get_current_player()
@@ -73,6 +104,54 @@ class TestFeaturizer(unittest.TestCase):
         features = featurize(self.state)
         min_cost_idx = FEATURE_NAMES.index("hand_min_cost")
         self.assertEqual(features[min_cost_idx], 0.0)
+
+
+class TestMaxAchievableVP(unittest.TestCase):
+    def test_no_turns_returns_zero(self):
+        hand = [Bird("A", 5, 2)]
+        self.assertEqual(_max_achievable_vp(hand, food=3, board_slots_left=5, turns_left=0), 0.0)
+
+    def test_no_slots_returns_zero(self):
+        hand = [Bird("A", 5, 2)]
+        self.assertEqual(_max_achievable_vp(hand, food=3, board_slots_left=0, turns_left=5), 0.0)
+
+    def test_empty_hand_returns_zero(self):
+        self.assertEqual(_max_achievable_vp([], food=3, board_slots_left=5, turns_left=5), 0.0)
+
+    def test_one_affordable_bird_one_turn(self):
+        hand = [Bird("A", 5, 2)]
+        self.assertEqual(_max_achievable_vp(hand, food=2, board_slots_left=5, turns_left=1), 5.0)
+
+    def test_one_bird_needs_food_turn(self):
+        # Cost 3, have 1 food -> need 2 food turns + 1 play turn = 3 turns
+        hand = [Bird("A", 7, 3)]
+        self.assertEqual(_max_achievable_vp(hand, food=1, board_slots_left=5, turns_left=3), 7.0)
+        # Only 2 turns available: not enough
+        self.assertEqual(_max_achievable_vp(hand, food=1, board_slots_left=5, turns_left=2), 0.0)
+
+    def test_greedy_picks_highest_vp_first(self):
+        hand = [Bird("Low", 2, 1), Bird("High", 8, 1)]
+        # 2 turns, 1 food each -> plays High first, then Low
+        self.assertEqual(_max_achievable_vp(hand, food=2, board_slots_left=5, turns_left=2), 10.0)
+
+    def test_slot_limit_caps_plays(self):
+        hand = [Bird("A", 5, 1), Bird("B", 3, 1), Bird("C", 2, 1)]
+        # 3 food, 3 turns, but only 1 slot
+        self.assertEqual(_max_achievable_vp(hand, food=3, board_slots_left=1, turns_left=3), 5.0)
+
+    def test_food_budget_across_multiple_birds(self):
+        # Bird A: 6 VP, cost 2. Bird B: 4 VP, cost 3.
+        # Have 3 food, 3 turns.
+        # Play A (cost 2, 1 turn, food left 1), then need 2 more food for B (2 turns) + 1 play = 3 turns. Only 2 left.
+        # So only A is playable.
+        hand = [Bird("A", 6, 2), Bird("B", 4, 3)]
+        self.assertEqual(_max_achievable_vp(hand, food=3, board_slots_left=5, turns_left=3), 6.0)
+        # With 5 turns: play A (1 turn, food=1), gain 2 food (2 turns, food=3), play B (1 turn) = 4 turns total
+        self.assertEqual(_max_achievable_vp(hand, food=3, board_slots_left=5, turns_left=5), 10.0)
+
+    def test_free_bird_costs_one_turn(self):
+        hand = [Bird("Free", 2, 0)]
+        self.assertEqual(_max_achievable_vp(hand, food=0, board_slots_left=5, turns_left=1), 2.0)
 
 
 class TestFeaturizeOption(unittest.TestCase):
