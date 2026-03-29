@@ -17,6 +17,7 @@ from src.rl.featurizer import (
     ACTION_INDEX,
     FEATURE_NAMES,
     NUM_FEATURES,
+    NUM_SUB_FEATURES,
     OPTION_FEATURE_NAMES,
     featurize,
     featurize_option,
@@ -454,7 +455,11 @@ def load_checkpoint_weights(models_dir, max_checkpoints=50):
     entries.sort(key=lambda x: x[0])
 
     if not entries:
-        return {"iterations": [], "action_weights": np.array([]), "sub_weights": np.array([])}
+        return {
+            "iterations": [],
+            "action_weights": np.empty((0, NUM_FEATURES, 3)),
+            "sub_weights": np.empty((0, NUM_SUB_FEATURES)),
+        }
 
     # Subsample to max_checkpoints evenly spaced entries
     if len(entries) > max_checkpoints:
