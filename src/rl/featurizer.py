@@ -149,8 +149,10 @@ def _unseen_bird_stats(state, player):
     else:
         mean_affordable_vp = 0.0
 
-    playable = [b for b in hand_birds if food >= b.get_food_cost() and not board.check_if_full()]
-    best_immediate_vp = max((b.get_points() for b in playable), default=0)
+    if board.check_if_full():
+        best_immediate_vp = 0
+    else:
+        best_immediate_vp = max((b.get_points() for b in hand_birds if food >= b.get_food_cost()), default=0)
     draw_upside = mean_affordable_vp - best_immediate_vp
 
     return mean_ratio, prob_better, prob_affordable, draw_upside
@@ -186,8 +188,9 @@ def featurize(state):
     # Tier 1: strategic calculations (#91)
     turns_remaining = player.get_turns_remaining()
     board_slots_left = board.capacity - len(board.get_birds())
-    best_immediate_vp = max((b.get_points() for b in playable), default=0) if playable else 0
-    affordable_count = len(playable) if playable else 0
+    can_play = playable and board_slots_left > 0
+    best_immediate_vp = max((b.get_points() for b in playable), default=0) if can_play else 0
+    affordable_count = len(playable) if can_play else 0
     max_vp = _max_achievable_vp(hand_birds, food, board_slots_left, turns_remaining)
 
     # Tray quality features (kept from original)
