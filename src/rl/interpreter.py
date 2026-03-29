@@ -76,11 +76,10 @@ def get_action_weight_table(policy):
 
     Each dict: {"feature": str, "play_a_bird": float, "gain_food": float, "draw_a_bird": float}
     """
-    actions = list(ACTION_INDEX.keys())
     table = []
     for i, fname in enumerate(FEATURE_NAMES):
         row = {"feature": fname}
-        for j, action in enumerate(actions):
+        for action, j in ACTION_INDEX.items():
             row[action] = policy.weights[i, j]
         table.append(row)
     return table
@@ -144,11 +143,10 @@ def generate_strategy_rules(policy, threshold=0.5):
     Returns list of StrategyRule sorted by magnitude descending.
     """
     rules = []
-    actions = list(ACTION_INDEX.keys())
 
     # Action-level rules: for each feature, find the strongest preference shift
     for i, fname in enumerate(FEATURE_NAMES):
-        weights_for_feature = {a: policy.weights[i, j] for j, a in enumerate(actions)}
+        weights_for_feature = {a: policy.weights[i, j] for a, j in ACTION_INDEX.items()}
         best_action = max(weights_for_feature, key=weights_for_feature.get)
         worst_action = min(weights_for_feature, key=weights_for_feature.get)
         spread = weights_for_feature[best_action] - weights_for_feature[worst_action]
@@ -208,12 +206,11 @@ def trace_action_decision(policy, state):
     Returns a list of ActionBreakdown sorted by probability descending.
     """
     features = featurize(state)
-    actions = list(ACTION_INDEX.keys())
     all_logits = features @ policy.weights
     probs = _softmax(all_logits)
 
     breakdowns = []
-    for j, action in enumerate(actions):
+    for action, j in ACTION_INDEX.items():
         contributions = []
         for i, fname in enumerate(FEATURE_NAMES):
             contributions.append(
