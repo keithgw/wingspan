@@ -11,7 +11,11 @@ def _eval_chunk(args):
 
     Top-level function so it's picklable by ProcessPoolExecutor.
     """
-    weights, sub_weights, start_game_num, num_games, num_turns = args
+    weights, sub_weights, start_game_num, num_games, num_turns, seed = args
+
+    # Reseed RNG to ensure independent games across workers
+    np.random.seed(seed)
+
     from src.rl.linear_policy import LinearPolicy
     from src.rl.policy import RandomPolicy
 
@@ -86,31 +90,39 @@ def evaluate(challenger, baseline, num_games=100, num_turns=10):
     return _build_eval_results(wins, ties, scores, opponent_scores)
 
 
-def evaluate_parallel(policy, num_games=100, num_turns=10, pool=None):
+def evaluate_parallel(policy, num_games=100, num_turns=10, pool=None, workers=1):
     """Evaluate a LinearPolicy against RandomPolicy using a process pool.
 
     Args:
         policy: LinearPolicy with weights/sub_weights attributes.
         num_games: Total evaluation games.
         num_turns: Turns per game.
-        pool: A ProcessPoolExecutor instance.
+        pool: A ProcessPoolExecutor instance (required).
+        workers: Number of workers to split work across.
 
     Returns:
         Same dict as evaluate().
     """
-    n_workers = pool._max_workers
-    chunk_size = num_games // n_workers
-    remainder = num_games % n_workers
+    if pool is None:
+        raise ValueError("pool is required for parallel evaluation")
+
+    chunk_size = num_games // workers
+    remainder = num_games % workers
 
     weights = policy.weights.tolist()
     sub_weights = policy.sub_weights.tolist()
 
+    # Generate independent seeds via SeedSequence for each worker
+    parent_seed = np.random.SeedSequence()
+    child_seeds = parent_seed.spawn(workers)
+
     chunks = []
     game_offset = 0
-    for i in range(n_workers):
+    for i in range(workers):
         games = chunk_size + (1 if i < remainder else 0)
         if games > 0:
-            chunks.append((weights, sub_weights, game_offset, games, num_turns))
+            seed = child_seeds[i].generate_state(1)[0]
+            chunks.append((weights, sub_weights, game_offset, games, num_turns, seed))
             game_offset += games
 
     results = list(pool.map(_eval_chunk, chunks))

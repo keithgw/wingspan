@@ -16,7 +16,11 @@ def _play_chunk(args):
     Reconstructs the policy from serialized weights to avoid pickling issues.
     Top-level function so it's picklable by ProcessPoolExecutor.
     """
-    weights, sub_weights, num_games, num_turns = args
+    weights, sub_weights, num_games, num_turns, seed = args
+
+    # Reseed RNG to ensure independent games across workers
+    np.random.seed(seed)
+
     from src.rl.linear_policy import LinearPolicy
 
     policy = LinearPolicy()
@@ -163,7 +167,7 @@ class SelfPlayRunner:
         return all_action_exps, all_sub_exps, stats
 
     @staticmethod
-    def collect_experience_parallel(policy, num_games, num_turns=10, pool=None):
+    def collect_experience_parallel(policy, num_games, num_turns=10, pool=None, workers=1):
         """Run N self-play games distributed across a process pool.
 
         Splits games into chunks, dispatches to workers, and merges results.
@@ -173,23 +177,31 @@ class SelfPlayRunner:
             policy: LinearPolicy with weights/sub_weights attributes.
             num_games: Total games to play.
             num_turns: Turns per game.
-            pool: A ProcessPoolExecutor instance (should be kept alive across iterations).
+            pool: A ProcessPoolExecutor instance (required).
+            workers: Number of workers to split work across.
 
         Returns:
             Tuple of (action_experiences, sub_experiences, stats).
         """
-        n_workers = pool._max_workers
-        chunk_size = num_games // n_workers
-        remainder = num_games % n_workers
+        if pool is None:
+            raise ValueError("pool is required for parallel experience collection")
+
+        chunk_size = num_games // workers
+        remainder = num_games % workers
 
         weights = policy.weights.tolist()
         sub_weights = policy.sub_weights.tolist()
 
+        # Generate independent seeds via SeedSequence for each worker
+        parent_seed = np.random.SeedSequence()
+        child_seeds = parent_seed.spawn(workers)
+
         chunks = []
-        for i in range(n_workers):
+        for i in range(workers):
             games = chunk_size + (1 if i < remainder else 0)
             if games > 0:
-                chunks.append((weights, sub_weights, games, num_turns))
+                seed = child_seeds[i].generate_state(1)[0]
+                chunks.append((weights, sub_weights, games, num_turns, seed))
 
         results = list(pool.map(_play_chunk, chunks))
 

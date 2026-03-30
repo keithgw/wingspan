@@ -102,7 +102,11 @@ def train(args):
             # Collect experience via self-play
             if pool is not None:
                 action_exps, sub_exps, stats = SelfPlayRunner.collect_experience_parallel(
-                    policy, num_games=args.games_per_iteration, num_turns=args.num_turns, pool=pool
+                    policy,
+                    num_games=args.games_per_iteration,
+                    num_turns=args.num_turns,
+                    pool=pool,
+                    workers=args.workers,
                 )
             else:
                 action_exps, sub_exps, stats = runner.collect_experience(
@@ -114,7 +118,13 @@ def train(args):
 
             # Evaluate against random baseline
             if pool is not None:
-                eval_results = evaluate_parallel(policy, num_games=args.eval_games, num_turns=args.num_turns, pool=pool)
+                eval_results = evaluate_parallel(
+                    policy,
+                    num_games=args.eval_games,
+                    num_turns=args.num_turns,
+                    pool=pool,
+                    workers=args.workers,
+                )
             else:
                 eval_results = evaluate(policy, baseline, num_games=args.eval_games, num_turns=args.num_turns)
 
@@ -148,7 +158,7 @@ def train(args):
                 policy.save(path)
     finally:
         if pool is not None:
-            pool.shutdown(wait=False)
+            pool.shutdown(wait=True, cancel_futures=True)
 
     # Save final policy
     final_path = os.path.join(args.output_dir, "policy_latest.npz")
@@ -554,11 +564,18 @@ if __name__ == "__main__":
     train_parser.add_argument("--eval_games", type=int, default=50)
     train_parser.add_argument("--save_every", type=int, default=10)
     train_parser.add_argument("--output_dir", type=str, default="models")
+
+    def _positive_int(value):
+        ivalue = int(value)
+        if ivalue < 1:
+            raise argparse.ArgumentTypeError(f"--workers must be >= 1, got {value}")
+        return ivalue
+
     train_parser.add_argument(
         "--workers",
-        type=int,
+        type=_positive_int,
         default=1,
-        help="Number of parallel workers for self-play and eval (default: 1, sequential)",
+        help="Parallel workers for self-play and eval (default: 1)",
     )
     resume_group = train_parser.add_mutually_exclusive_group(required=True)
     resume_group.add_argument("--resume", action="store_true", help="Resume from policy_latest.npz in output_dir")

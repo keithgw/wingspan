@@ -102,7 +102,7 @@ class TestParallelSelfPlay(unittest.TestCase):
         policy = LinearPolicy()
         with ProcessPoolExecutor(max_workers=2) as pool:
             action_exps, sub_exps, stats = SelfPlayRunner.collect_experience_parallel(
-                policy, num_games=6, num_turns=2, pool=pool
+                policy, num_games=6, num_turns=2, pool=pool, workers=2
             )
         self.assertGreater(len(action_exps), 0)
         self.assertEqual(stats["wins"] + stats["losses"] + stats["ties"], 6)
@@ -118,7 +118,7 @@ class TestParallelSelfPlay(unittest.TestCase):
         serial_a, serial_s, serial_stats = runner.collect_experience(policy, num_games=4, num_turns=2)
         with ProcessPoolExecutor(max_workers=2) as pool:
             par_a, par_s, par_stats = SelfPlayRunner.collect_experience_parallel(
-                policy, num_games=4, num_turns=2, pool=pool
+                policy, num_games=4, num_turns=2, pool=pool, workers=2
             )
 
         # Same stat keys
