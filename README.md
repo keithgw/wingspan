@@ -133,6 +133,10 @@ wingspan/
 - **Evaluator** measures win rate against random or MCTS baselines, alternating positions to remove first-player bias
 - **Training CLI** (`src/train.py`): train with `--fresh`/`--resume`, evaluate against random or MCTS, plot training progress
 - **Interpretation** (`interpreter.py`): pure analysis functions for weight inspection, feature importance, strategy rule generation, decision traces with diverse game states, and weight evolution across checkpoints. CLI via `train.py interpret` with 5 modes: `weights`, `importance`, `summary`, `trace`, `evolution`. Visualizations use seaborn
+- **Analysis report** (`report.py`): `train.py report` generates a Jupyter notebook combining all interpretation modes with interactive exploration cells (what-if feature sweeps, counterintuitive decision finder). Run with:
+  ```bash
+  uv run python -m src.train report --policy_path models/policy_latest.npz
+  ```
 
 ## Roadmap
 
