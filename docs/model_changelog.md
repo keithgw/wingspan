@@ -6,6 +6,46 @@ Evaluation protocol: 50 games alternating first/second player, opponent is `Rand
 
 ---
 
+## v3 — Interaction + Polynomial Features
+
+**Date:** 2026-03-30
+**Git ref:** main (post-PR #96, #98)
+**Baseline file:** `models/baselines/v3_linear_26features.npz`
+
+### Features (26 state + 8 option)
+
+Added 4 interaction/polynomial features from #92 that encode non-linear relationships the linear model cannot learn from raw features alone:
+
+- `food_gap_for_best` — how much food needed to play the most expensive bird in hand
+- `vp_at_stake` — VP gap between best bird in hand and best affordable bird (opportunity cost)
+- `endgame_flag` — binary flag when 3 or fewer turns remain
+- `urgency` — score gap to close divided by turns remaining
+
+### Training
+
+| Parameter | Value |
+|-----------|-------|
+| Iterations | 20,000 |
+| Games/iteration | 100 |
+| Learning rate | 0.01 |
+| Turns/game | 10 |
+| Workers | 14 (parallel, #95) |
+
+### Evaluation vs Random
+
+| Metric | Value |
+|--------|-------|
+| Win rate | 84.7% |
+| Mean score | 14.0 |
+| Mean opponent score | 8.4 |
+| Mean score diff | +5.6 |
+
+### Notes
+
+Modest improvement over v2 (+1.1% win rate, +0.2 score diff). The new features ranked highly by importance: `urgency` was #1 overall, `endgame_flag` #5, `vp_at_stake` #8. The model learned intuitive strategies: play aggressively when behind (`urgency`), shift to playing birds in endgame (`endgame_flag`), gain food when holding expensive unaffordable birds (`vp_at_stake`). First model trained with parallel self-play (#95), reducing wall-clock training time ~7x.
+
+---
+
 ## v2 — Strategic + Deck Composition Features
 
 **Date:** 2026-03-30

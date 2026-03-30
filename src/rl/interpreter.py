@@ -478,9 +478,19 @@ def load_checkpoint_weights(models_dir, max_checkpoints=50):
 
     for iteration, filepath in entries:
         policy = LinearPolicy.load(filepath)
+        # Skip checkpoints with mismatched feature dimensions (e.g. old runs)
+        if policy.weights.shape[0] != NUM_FEATURES:
+            continue
         iterations.append(iteration)
         action_weights_list.append(policy.weights)
         sub_weights_list.append(policy.sub_weights)
+
+    if not iterations:
+        return {
+            "iterations": [],
+            "action_weights": np.empty((0, NUM_FEATURES, 3)),
+            "sub_weights": np.empty((0, NUM_SUB_FEATURES)),
+        }
 
     return {
         "iterations": iterations,
