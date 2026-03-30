@@ -33,6 +33,11 @@ FEATURE_NAMES = [
     "opponent_best_score",
     "opponent_avg_food",
     "score_lead",
+    # Interaction/polynomial (#92)
+    "food_gap_for_best",
+    "vp_at_stake",
+    "endgame_flag",
+    "urgency",
 ]
 
 NUM_FEATURES = len(FEATURE_NAMES)
@@ -228,6 +233,20 @@ def featurize(state):
 
     score_lead = board_score - opponent_best_score
 
+    # Interaction/polynomial features (#92)
+    best_bird_cost = max((b.get_food_cost() for b in hand_birds), default=0)
+    # food_gap_for_best: how much food needed to play the highest-cost bird in hand
+    food_gap_for_best = max(0, best_bird_cost - food)
+    # vp_at_stake: VP of best affordable bird (0 if nothing playable)
+    vp_at_stake = best_immediate_vp  # already computed above
+    # endgame_flag: qualitative late-game phase shift
+    endgame_flag = 1.0 if turns_remaining <= 3 else 0.0
+    # urgency: pressure to be aggressive (score gap / turns remaining)
+    if turns_remaining > 0:
+        urgency = max(0, opponent_best_score - board_score) / turns_remaining
+    else:
+        urgency = 0.0
+
     return np.array(
         [
             game_progress,
@@ -256,6 +275,11 @@ def featurize(state):
             opponent_best_score / 50.0,
             opponent_avg_food / 10.0,
             score_lead / 50.0,
+            # Interaction/polynomial (#92)
+            food_gap_for_best / 5.0,
+            vp_at_stake / 10.0,
+            endgame_flag,
+            urgency / 10.0,
         ],
         dtype=np.float64,
     )
