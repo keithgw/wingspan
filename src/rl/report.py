@@ -34,8 +34,17 @@ def generate_report(policy_path, output_path=None, models_dir="models"):
     Returns:
         Path to the generated notebook.
     """
+    if not os.path.isfile(policy_path):
+        raise FileNotFoundError(f"Policy file not found: {policy_path}")
+
     if output_path is None:
         output_path = os.path.join(os.path.dirname(policy_path) or ".", "policy_report.ipynb")
+
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
+    # Use repr() for safe embedding of paths in generated Python code
+    safe_policy_path = repr(policy_path)
+    safe_models_dir = repr(models_dir)
 
     cells = []
 
@@ -78,7 +87,7 @@ from src.rl.interpreter import (
 )
 
 sns.set_theme(style="whitegrid", font_scale=0.9)
-policy = LinearPolicy.load("{policy_path}")
+policy = LinearPolicy.load({safe_policy_path})
 print(f"Loaded policy: {{policy.weights.shape[0]}} features, {{policy.weights.shape[1]}} actions")""",
             hidden=True,
         )
@@ -217,7 +226,7 @@ learning; oscillation may indicate instability or competing gradients.""")
     )
 
     cells.append(
-        _code_cell(f"""checkpoint_data = load_checkpoint_weights("{models_dir}", max_checkpoints=50)
+        _code_cell(f"""checkpoint_data = load_checkpoint_weights({safe_models_dir}, max_checkpoints=50)
 iterations = checkpoint_data["iterations"]
 
 if iterations:
@@ -262,7 +271,7 @@ specific questions about the policy.
 from src.rl.linear_policy import _softmax
 
 # Pick a sample state and a feature to vary
-sample_state = samples[1]["state"]  # moderate-certainty state
+sample_state = samples[min(1, len(samples) - 1)]["state"]
 feature_to_vary = "food_supply"  # change this to explore other features
 feature_idx = FEATURE_NAMES.index(feature_to_vary)
 
@@ -359,7 +368,7 @@ for s in surprises[:3]:
         "cells": cells,
     }
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(notebook, f, indent=1)
 
     return output_path
