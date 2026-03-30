@@ -9,6 +9,28 @@ import numpy as np
 from src.rl.featurizer import ACTION_INDEX, featurize, featurize_option
 from src.rl.policy import Policy
 
+
+def _play_chunk(args):
+    """Play a chunk of self-play games in a worker process.
+
+    Reconstructs the policy from serialized weights to avoid pickling issues.
+    Top-level function so it's picklable by ProcessPoolExecutor.
+    """
+    weights, sub_weights, num_games, num_turns, seed = args
+
+    # Reseed RNG to ensure independent games across workers
+    np.random.seed(seed)
+
+    from src.rl.linear_policy import LinearPolicy
+
+    policy = LinearPolicy()
+    policy.weights = np.array(weights)
+    policy.sub_weights = np.array(sub_weights)
+
+    runner = SelfPlayRunner()
+    return runner.collect_experience(policy, num_games=num_games, num_turns=num_turns)
+
+
 # Action-level experience (CHOOSE_ACTION phase)
 ActionExperience = namedtuple("ActionExperience", ["features", "action_index", "reward"])
 
@@ -143,3 +165,59 @@ class SelfPlayRunner:
         }
 
         return all_action_exps, all_sub_exps, stats
+
+    @staticmethod
+    def collect_experience_parallel(policy, num_games, num_turns=10, pool=None, workers=1):
+        """Run N self-play games distributed across a process pool.
+
+        Splits games into chunks, dispatches to workers, and merges results.
+        Requires a LinearPolicy (weights are serialized for workers).
+
+        Args:
+            policy: LinearPolicy with weights/sub_weights attributes.
+            num_games: Total games to play.
+            num_turns: Turns per game.
+            pool: A ProcessPoolExecutor instance (required).
+            workers: Number of workers to split work across.
+
+        Returns:
+            Tuple of (action_experiences, sub_experiences, stats).
+        """
+        if pool is None:
+            raise ValueError("pool is required for parallel experience collection")
+
+        chunk_size = num_games // workers
+        remainder = num_games % workers
+
+        weights = policy.weights.tolist()
+        sub_weights = policy.sub_weights.tolist()
+
+        # Generate independent seeds via SeedSequence for each worker
+        parent_seed = np.random.SeedSequence()
+        child_seeds = parent_seed.spawn(workers)
+
+        chunks = []
+        for i in range(workers):
+            games = chunk_size + (1 if i < remainder else 0)
+            if games > 0:
+                seed = child_seeds[i].generate_state(1)[0]
+                chunks.append((weights, sub_weights, games, num_turns, seed))
+
+        results = list(pool.map(_play_chunk, chunks))
+
+        all_action_exps = []
+        all_sub_exps = []
+        all_rewards = []
+        for action_exps, sub_exps, stats in results:
+            all_action_exps.extend(action_exps)
+            all_sub_exps.extend(sub_exps)
+            all_rewards.extend([1.0] * stats["wins"] + [0.0] * stats["losses"] + [0.5] * stats["ties"])
+
+        merged_stats = {
+            "wins": sum(1 for r in all_rewards if r == 1.0),
+            "losses": sum(1 for r in all_rewards if r == 0.0),
+            "ties": sum(1 for r in all_rewards if r == 0.5),
+            "mean_reward": np.mean(all_rewards),
+        }
+
+        return all_action_exps, all_sub_exps, merged_stats

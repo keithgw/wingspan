@@ -4,7 +4,7 @@ import argparse
 import csv
 import os
 
-from src.rl.evaluator import evaluate
+from src.rl.evaluator import evaluate, evaluate_parallel
 from src.rl.linear_policy import LinearPolicy
 from src.rl.policy import RandomPolicy
 from src.rl.self_play import SelfPlayRunner
@@ -85,50 +85,80 @@ def train(args):
 
     runner = SelfPlayRunner()
     baseline = RandomPolicy()
+    use_parallel = args.workers > 1
 
-    print(f"Training for {args.num_iterations} iterations, {args.games_per_iteration} games each")
+    mode_str = f"{args.workers} workers" if use_parallel else "sequential"
+    print(f"Training for {args.num_iterations} iterations, {args.games_per_iteration} games each ({mode_str})")
     print(f"Metrics will be saved to {metrics_path}\n")
 
-    for iteration in range(start_iteration + 1, start_iteration + args.num_iterations + 1):
-        # Collect experience via self-play
-        action_exps, sub_exps, stats = runner.collect_experience(
-            policy, num_games=args.games_per_iteration, num_turns=args.num_turns
-        )
+    pool = None
+    if use_parallel:
+        from concurrent.futures import ProcessPoolExecutor
 
-        # Train on collected experience
-        train_batch(policy, action_exps, sub_exps, learning_rate=args.learning_rate)
+        pool = ProcessPoolExecutor(max_workers=args.workers)
 
-        # Evaluate against random baseline
-        eval_results = evaluate(policy, baseline, num_games=args.eval_games, num_turns=args.num_turns)
+    try:
+        for iteration in range(start_iteration + 1, start_iteration + args.num_iterations + 1):
+            # Collect experience via self-play
+            if pool is not None:
+                action_exps, sub_exps, stats = SelfPlayRunner.collect_experience_parallel(
+                    policy,
+                    num_games=args.games_per_iteration,
+                    num_turns=args.num_turns,
+                    pool=pool,
+                    workers=args.workers,
+                )
+            else:
+                action_exps, sub_exps, stats = runner.collect_experience(
+                    policy, num_games=args.games_per_iteration, num_turns=args.num_turns
+                )
 
-        # Log metrics
-        _append_metrics(
-            metrics_path,
-            {
-                "iteration": iteration,
-                "self_play_wins": stats["wins"],
-                "self_play_losses": stats["losses"],
-                "self_play_ties": stats["ties"],
-                "self_play_mean_reward": f"{stats['mean_reward']:.3f}",
-                "eval_win_rate": f"{eval_results['win_rate']:.3f}",
-                "eval_tie_rate": f"{eval_results['tie_rate']:.3f}",
-                "eval_mean_score": f"{eval_results['mean_score']:.1f}",
-                "eval_mean_opponent_score": f"{eval_results['mean_opponent_score']:.1f}",
-                "eval_mean_score_diff": f"{eval_results['mean_score_diff']:.1f}",
-            },
-        )
+            # Train on collected experience
+            train_batch(policy, action_exps, sub_exps, learning_rate=args.learning_rate)
 
-        print(
-            f"Iter {iteration:3d} | "
-            f"Self-play: {stats['wins']}W/{stats['losses']}L/{stats['ties']}T | "
-            f"vs Random: {eval_results['win_rate']:.0%} win, "
-            f"score diff {eval_results['mean_score_diff']:+.1f}"
-        )
+            # Evaluate against random baseline
+            if pool is not None:
+                eval_results = evaluate_parallel(
+                    policy,
+                    num_games=args.eval_games,
+                    num_turns=args.num_turns,
+                    pool=pool,
+                    workers=args.workers,
+                )
+            else:
+                eval_results = evaluate(policy, baseline, num_games=args.eval_games, num_turns=args.num_turns)
 
-        # Save checkpoint
-        if iteration % args.save_every == 0 or iteration == args.num_iterations:
-            path = os.path.join(args.output_dir, f"policy_iter_{iteration}.npz")
-            policy.save(path)
+            # Log metrics
+            _append_metrics(
+                metrics_path,
+                {
+                    "iteration": iteration,
+                    "self_play_wins": stats["wins"],
+                    "self_play_losses": stats["losses"],
+                    "self_play_ties": stats["ties"],
+                    "self_play_mean_reward": f"{stats['mean_reward']:.3f}",
+                    "eval_win_rate": f"{eval_results['win_rate']:.3f}",
+                    "eval_tie_rate": f"{eval_results['tie_rate']:.3f}",
+                    "eval_mean_score": f"{eval_results['mean_score']:.1f}",
+                    "eval_mean_opponent_score": f"{eval_results['mean_opponent_score']:.1f}",
+                    "eval_mean_score_diff": f"{eval_results['mean_score_diff']:.1f}",
+                },
+            )
+
+            print(
+                f"Iter {iteration:3d} | "
+                f"Self-play: {stats['wins']}W/{stats['losses']}L/{stats['ties']}T | "
+                f"vs Random: {eval_results['win_rate']:.0%} win, "
+                f"score diff {eval_results['mean_score_diff']:+.1f}"
+            )
+
+            # Save checkpoint
+            if iteration % args.save_every == 0 or iteration == args.num_iterations:
+                path = os.path.join(args.output_dir, f"policy_iter_{iteration}.npz")
+                policy.save(path)
+    finally:
+        if pool is not None:
+            pool.shutdown(wait=True, cancel_futures=True)
 
     # Save final policy
     final_path = os.path.join(args.output_dir, "policy_latest.npz")
@@ -534,6 +564,19 @@ if __name__ == "__main__":
     train_parser.add_argument("--eval_games", type=int, default=50)
     train_parser.add_argument("--save_every", type=int, default=10)
     train_parser.add_argument("--output_dir", type=str, default="models")
+
+    def _positive_int(value):
+        ivalue = int(value)
+        if ivalue < 1:
+            raise argparse.ArgumentTypeError(f"--workers must be >= 1, got {value}")
+        return ivalue
+
+    train_parser.add_argument(
+        "--workers",
+        type=_positive_int,
+        default=1,
+        help="Parallel workers for self-play and eval (default: 1)",
+    )
     resume_group = train_parser.add_mutually_exclusive_group(required=True)
     resume_group.add_argument("--resume", action="store_true", help="Resume from policy_latest.npz in output_dir")
     resume_group.add_argument("--fresh", action="store_true", help="Start training from scratch")
