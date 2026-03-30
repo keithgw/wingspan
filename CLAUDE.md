@@ -55,6 +55,9 @@ uv run python -m src.train interpret --policy_path models/policy_latest.npz --mo
 uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode weights --save
 uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode trace
 uv run python -m src.train interpret --policy_path models/policy_latest.npz --mode evolution --save
+
+# Generate analysis report notebook
+uv run python -m src.train report --policy_path models/policy_latest.npz
 ```
 
 ## Architecture Notes
@@ -66,7 +69,7 @@ uv run python -m src.train interpret --policy_path models/policy_latest.npz --mo
 - **Simplifications**: Birds only have VP and food cost (no habitats, egg capacity, or powers). Single food type. No bonus cards or end-of-round goals
 - **Entity serialization**: All entities have `to_representation()` returning hashable types; BirdHand, GameBoard, Tray have `from_representation()` for reconstruction
 - **Training**: `LinearPolicy` (numpy-based, interpretable weights) trained via REINFORCE self-play. `featurizer.py` converts GameState to 26 named features (including strategic calculations, deck composition awareness, and interaction/polynomial features). `self_play.py` runs games and collects experience. `train.py` is the CLI entry point
-- **Interpretation**: `interpreter.py` provides pure analysis functions (weight inspection, feature importance, strategy rules, decision traces, weight evolution). CLI via `train.py interpret` with 5 modes: weights, importance, summary, trace, evolution
+- **Interpretation**: `interpreter.py` provides pure analysis functions (weight inspection, feature importance, strategy rules, decision traces, weight evolution). CLI via `train.py interpret` with 5 modes: weights, importance, summary, trace, evolution. `train.py report` generates a Jupyter notebook combining all analyses with interactive exploration cells
 
 ## Next Milestone
 Learned playout policy (#73) and value network (#75).

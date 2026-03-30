@@ -629,6 +629,16 @@ if __name__ == "__main__":
     )
     interpret_parser.add_argument("--save", action="store_true", help="Save plots to files")
 
+    # Report subcommand
+    report_parser = subparsers.add_parser("report", help="Generate a Jupyter notebook analyzing a policy")
+    report_parser.add_argument(
+        "--policy_path", type=str, default="models/policy_latest.npz", help="Path to .npz policy"
+    )
+    report_parser.add_argument(
+        "--output", type=str, default=None, help="Output .ipynb path (default: alongside policy)"
+    )
+    report_parser.add_argument("--models_dir", type=str, default="models", help="Checkpoint directory for evolution")
+
     args = parser.parse_args()
 
     if args.command == "train":
@@ -639,3 +649,8 @@ if __name__ == "__main__":
         plot_metrics(args)
     elif args.command == "interpret":
         interpret_policy(args)
+    elif args.command == "report":
+        from src.rl.report import generate_report
+
+        path = generate_report(args.policy_path, output_path=args.output, models_dir=args.models_dir)
+        print(f"Report generated: {path}")
