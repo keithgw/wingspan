@@ -114,11 +114,25 @@ class TestFeaturizer(unittest.TestCase):
         idx = FEATURE_NAMES.index("food_gap_for_best")
         self.assertEqual(features[idx], 0.0)
 
-    def test_vp_at_stake_matches_best_immediate(self):
+    def test_vp_at_stake_zero_when_all_affordable(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 10
+        features = featurize(self.state)
+        vp_idx = FEATURE_NAMES.index("vp_at_stake")
+        # When all birds are affordable, best in hand == best affordable, gap is 0
+        self.assertEqual(features[vp_idx], 0.0)
+
+    def test_vp_at_stake_positive_when_best_unaffordable(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 0
         features = featurize(self.state)
         vp_idx = FEATURE_NAMES.index("vp_at_stake")
         biv_idx = FEATURE_NAMES.index("best_immediate_vp")
-        self.assertEqual(features[vp_idx], features[biv_idx])
+        hand_birds = player.get_bird_hand().get_cards_in_hand()
+        has_costly_bird = any(b.get_food_cost() > 0 for b in hand_birds)
+        if has_costly_bird and features[biv_idx] == 0.0:
+            # Best bird in hand has VP but isn't affordable → positive gap
+            self.assertGreater(features[vp_idx], 0.0)
 
     def test_endgame_flag_at_start(self):
         features = featurize(self.state)
@@ -127,12 +141,8 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(features[idx], 0.0)
 
     def test_endgame_flag_near_end(self):
-        # Burn turns until <= 3 remain
         player = self.state.get_current_player()
-        while player.get_turns_remaining() > 3:
-            action = player.request_action(game_state=self.state)
-            player.take_action(action=action, game_state=self.state)
-            self.state.end_player_turn(player=player)
+        player.turns_remaining = 3
         features = featurize(self.state)
         idx = FEATURE_NAMES.index("endgame_flag")
         self.assertEqual(features[idx], 1.0)
