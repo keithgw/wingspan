@@ -97,6 +97,63 @@ class TestFeaturizer(unittest.TestCase):
         # At start with 3 food, most cards (cost 0-3) are affordable
         self.assertGreater(features[idx], 0.5)
 
+    def test_food_gap_for_best_with_low_food(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 0
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("food_gap_for_best")
+        # With 0 food, gap should be positive if hand has any birds with cost > 0
+        hand_birds = player.get_bird_hand().get_cards_in_hand()
+        max_cost = max((b.get_food_cost() for b in hand_birds), default=0)
+        self.assertAlmostEqual(features[idx], max_cost / 5.0)
+
+    def test_food_gap_for_best_with_plenty_food(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 10
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("food_gap_for_best")
+        self.assertEqual(features[idx], 0.0)
+
+    def test_vp_at_stake_zero_when_all_affordable(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 10
+        features = featurize(self.state)
+        vp_idx = FEATURE_NAMES.index("vp_at_stake")
+        # When all birds are affordable, best in hand == best affordable, gap is 0
+        self.assertEqual(features[vp_idx], 0.0)
+
+    def test_vp_at_stake_positive_when_best_unaffordable(self):
+        player = self.state.get_current_player()
+        player.get_food_supply().amount = 0
+        features = featurize(self.state)
+        vp_idx = FEATURE_NAMES.index("vp_at_stake")
+        biv_idx = FEATURE_NAMES.index("best_immediate_vp")
+        hand_birds = player.get_bird_hand().get_cards_in_hand()
+        has_costly_bird = any(b.get_food_cost() > 0 for b in hand_birds)
+        if has_costly_bird and features[biv_idx] == 0.0:
+            # Best bird in hand has VP but isn't affordable → positive gap
+            self.assertGreater(features[vp_idx], 0.0)
+
+    def test_endgame_flag_at_start(self):
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("endgame_flag")
+        # 5 turns remaining at start, should not be endgame
+        self.assertEqual(features[idx], 0.0)
+
+    def test_endgame_flag_near_end(self):
+        player = self.state.get_current_player()
+        player.turns_remaining = 3
+        features = featurize(self.state)
+        idx = FEATURE_NAMES.index("endgame_flag")
+        self.assertEqual(features[idx], 1.0)
+
+    def test_urgency_zero_when_leading(self):
+        features = featurize(self.state)
+        lead_idx = FEATURE_NAMES.index("score_lead")
+        urgency_idx = FEATURE_NAMES.index("urgency")
+        if features[lead_idx] >= 0:
+            self.assertEqual(features[urgency_idx], 0.0)
+
     def test_hand_min_cost_zero_when_nothing_playable(self):
         # Drain all food so nothing is playable
         player = self.state.get_current_player()
