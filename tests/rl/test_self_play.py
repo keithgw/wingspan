@@ -95,5 +95,37 @@ class TestSelfPlayRunner(unittest.TestCase):
         self.assertEqual(stats["wins"] + stats["losses"] + stats["ties"], 5)
 
 
+class TestParallelSelfPlay(unittest.TestCase):
+    def test_collect_experience_parallel(self):
+        from concurrent.futures import ProcessPoolExecutor
+
+        policy = LinearPolicy()
+        with ProcessPoolExecutor(max_workers=2) as pool:
+            action_exps, sub_exps, stats = SelfPlayRunner.collect_experience_parallel(
+                policy, num_games=6, num_turns=2, pool=pool
+            )
+        self.assertGreater(len(action_exps), 0)
+        self.assertEqual(stats["wins"] + stats["losses"] + stats["ties"], 6)
+        for exp in action_exps:
+            self.assertEqual(exp.features.shape, (NUM_FEATURES,))
+
+    def test_parallel_matches_serial_stats_structure(self):
+        from concurrent.futures import ProcessPoolExecutor
+
+        policy = LinearPolicy()
+        runner = SelfPlayRunner()
+
+        serial_a, serial_s, serial_stats = runner.collect_experience(policy, num_games=4, num_turns=2)
+        with ProcessPoolExecutor(max_workers=2) as pool:
+            par_a, par_s, par_stats = SelfPlayRunner.collect_experience_parallel(
+                policy, num_games=4, num_turns=2, pool=pool
+            )
+
+        # Same stat keys
+        self.assertEqual(set(serial_stats.keys()), set(par_stats.keys()))
+        # Same total games
+        self.assertEqual(par_stats["wins"] + par_stats["losses"] + par_stats["ties"], 4)
+
+
 if __name__ == "__main__":
     unittest.main()
