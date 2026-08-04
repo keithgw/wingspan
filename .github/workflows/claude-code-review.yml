@@ -6,6 +6,17 @@ on:
 
 jobs:
   claude-review:
+    # This repo is public, unlike the other repos this recipe has shipped on
+    # so far (all private). A bare `pull_request` trigger runs for a PR from
+    # any fork, and this job's `bypassPermissions` claude_args plus the
+    # account-scoped OAuth token below would then be reachable from untrusted
+    # PR content. Restrict to OWNER/MEMBER/COLLABORATOR, the same guard
+    # already on claude.yml, so the risk-acceptance rationale further down
+    # (a trusted-author-only threat model) is actually true here. GitHub
+    # already withholds secrets from fork pull_request runs by default, so
+    # this is defense in depth on top of that platform behavior, not the
+    # only thing standing between a fork PR and the token.
+    if: contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,10 +62,12 @@ jobs:
           # process's environment; bypassPermissions gives the agent unapproved
           # Bash over PR content it's instructed to read, so a prompt injection
           # in a reviewed PR could attempt to read that token out of the
-          # environment. Accepted here as a single-author repo where a malicious
-          # PR would have to come from Keith's own content; this is the same
-          # tradeoff every repo on this recipe carries, not one unique to this
-          # file.
+          # environment. Accepted here on the strength of the job-level
+          # author_association guard above: this repo is public, so without
+          # that guard a malicious PR could come from any fork, not just
+          # Keith's own content. Every other repo on this recipe so far is
+          # private, where the same acceptance holds without needing the
+          # guard.
           claude_args: '--permission-mode bypassPermissions'
           # A review that finds nothing still has to say so: silence is otherwise
           # indistinguishable from a broken pipeline.
