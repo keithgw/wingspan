@@ -1,0 +1,84 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude:
+    # Trusted-association guard, not just an '@claude' substring test. The
+    # installer-default guard (`contains(body, '@claude')`) has no awareness of
+    # code spans: on wildlife-sanctuary#64 a Copilot review body that merely
+    # *discussed* the tag flow, with '@claude' inside a code span, tripped tag
+    # mode, and the run then failed because Copilot is a bot with no author
+    # association. This repo requests a Copilot review on every PR
+    # (`--reviewer copilot-pull-request-reviewer`), so the same trip would
+    # recur here on every PR. Restricting to OWNER/MEMBER/COLLABORATOR (the
+    # pattern proven on pricing_clusters_prod and personal-config-backup)
+    # fixes it while keeping real @claude mentions in PR reviews working.
+    if: |
+      (github.event_name == 'issue_comment' &&
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' &&
+        contains(github.event.comment.body, '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review' &&
+        contains(github.event.review.body || '', '@claude') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
+      (github.event_name == 'issues' &&
+        (contains(github.event.issue.body || '', '@claude') || contains(github.event.issue.title, '@claude')) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
+    runs-on: ubuntu-latest
+    permissions:
+      # contents stays read on purpose. Tag mode also branches and commits, so a
+      # request to @claude for a code change will 403 rather than open a PR.
+      contents: read
+      pull-requests: write
+      # write, not the installer's default of read: the explicit github_token
+      # below is scoped by this block rather than by the OIDC-exchanged app
+      # token it replaces, and that token carried issues:write by default. This
+      # workflow sets no prompt, so an issues-triggered run enters tag mode and
+      # posts its first comment via issues.createComment before doing anything
+      # else; under issues: read that call 403s on every @claude mention.
+      # claude-code-review.yml never calls issues.createComment and keeps
+      # issues: read even with the explicit token.
+      issues: write
+      actions: read # Required for Claude to read CI results on PRs
+      # id-token deliberately NOT granted. The explicit github_token below
+      # means setupGitHubToken never falls through to the OIDC exchange that
+      # would otherwise need it.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1'
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Explicit token so the action skips the OIDC exchange entirely; see
+          # the id-token note in permissions above.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # This is an optional setting that allows Claude to read CI results on PRs
+          additional_permissions: |
+            actions: read
+
+          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
+          # prompt: 'Update the pull request description to include a summary of changes.'
+
+          # Optional: Add claude_args to customize behavior and configuration
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://code.claude.com/docs/en/cli-reference for available options
+          # claude_args: '--allowed-tools Bash(gh pr *)'
