@@ -10,13 +10,14 @@ jobs:
     # so far (all private). A bare `pull_request` trigger runs for a PR from
     # any fork, and this job's `bypassPermissions` claude_args plus the
     # account-scoped OAuth token below would then be reachable from untrusted
-    # PR content. Restrict to OWNER/MEMBER/COLLABORATOR, the same guard
-    # already on claude.yml, so the risk-acceptance rationale further down
+    # PR content. Run only for a PR whose head branch lives in this repo
+    # (pushing one needs write access, so fork PRs are skipped outright) and
+    # not for Dependabot's, so the risk-acceptance rationale further down
     # (a trusted-author-only threat model) is actually true here. GitHub
     # already withholds secrets from fork pull_request runs by default, so
     # this is defense in depth on top of that platform behavior, not the
     # only thing standing between a fork PR and the token.
-    if: contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,14 +64,53 @@ jobs:
           # Bash over PR content it's instructed to read, so a prompt injection
           # in a reviewed PR could attempt to read that token out of the
           # environment. Accepted here on the strength of the job-level
-          # author_association guard above: this repo is public, so without
+          # same-repo guard above: this repo is public, so without
           # that guard a malicious PR could come from any fork, not just
           # Keith's own content. Every other repo on this recipe so far is
           # private, where the same acceptance holds without needing the
           # guard.
-          claude_args: '--permission-mode bypassPermissions'
+          claude_args: '--permission-mode bypassPermissions --model opus --allowedTools mcp__github_inline_comment__create_inline_comment'
           # A review that finds nothing still has to say so: silence is otherwise
           # indistinguishable from a broken pipeline.
-          use_sticky_comment: true
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
+
+      # Records what the review did, read from the action's execution file:
+      # subagents launched by requested model, inline-comment and summary
+      # posts, cost by model. Prints no prompts or tool output. Its last log
+      # line is the machine line the review-recipe audit classifies runs by.
+      - name: Summarize review agents
+        if: always() && steps.claude-review.outputs.execution_file != ''
+        continue-on-error: true
+        env:
+          EXECUTION_FILE: ${{ steps.claude-review.outputs.execution_file }}
+        run: |
+          out=$(jq -r '
+            def safe: tostring | gsub("[^A-Za-z0-9._:-]"; "?");
+            [.[] | select(.type == "assistant") | (.parent_tool_use_id == null) as $top
+              | .message.content[]? | select(.type == "tool_use") | {top: $top, name, input}] as $uses
+            | [$uses[] | select(.top and (.name == "Agent" or .name == "Task"))] as $launches
+            | {opus_requested: ([$launches[] | select(.input.model // "" | (. == "opus" or startswith("claude-opus-")))] | length),
+                inline_tool_uses: ([$uses[] | select(.name == "mcp__github_inline_comment__create_inline_comment")] | length),
+                summary_posts: ([$uses[] | select(.name == "Bash" and (.input.command // "" | test("(^|[;&|(\\n])\\s*(\\w+=\\S*\\s+)*gh(\\s+-\\S+(\\s+[^-\\s]\\S*)?)*\\s+pr\\s+comment(\\s|$)")))] | length),
+                launches: ($launches | length)} as $n
+            | "Subagents launched: \($n.launches)",
+              ($launches | map(.input.model // "inherited" | safe) | group_by(.) | .[]
+                | "  requested model \(.[0]): \(length)"),
+              "Subagents that replied, by model:",
+              ([.[] | select(.type == "assistant" and .parent_tool_use_id != null)
+                | {id: .parent_tool_use_id, model: (.message.model // "unknown" | safe)}] | unique | group_by(.model) | .[]
+                | "  \(.[0].model): \(length)"),
+              "Inline-comment tool uses: \($n.inline_tool_uses)",
+              "gh pr comment calls: \($n.summary_posts)",
+              "Cost by model:",
+              (.[] | select(.type == "result") | .modelUsage // {} | to_entries[]
+                | "  \(.key | safe): $\(.value.costUSD // "n/a" | safe), \(.value.inputTokens // "n/a" | safe) in, \(.value.outputTokens // "n/a" | safe) out"),
+              "review-recipe-summary: opus_requested=\($n.opus_requested) inline_tool_uses=\($n.inline_tool_uses) summary_posts=\($n.summary_posts) launches=\($n.launches)"
+          ' "$EXECUTION_FILE")
+          {
+            echo '```'
+            printf '%s\n' "$out" | sed '$d'
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$out" | tail -n 1
